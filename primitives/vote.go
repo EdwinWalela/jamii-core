@@ -6,12 +6,6 @@ type Vote struct {
 	/**
 	Vote represents a tx in the blockchain
 	Mobile clients submits vote via TCP socket connection & node packs it into a Vote
-
-	Genesis block will contain a single Vote with the candidates field indicating registered
-	election candidtes. Address of genesis block will be null
-
-	Genesis block data will be obtained from institution's webserver and sent to nodes prior
-	to election
 	**/
 
 	address    ecdsa.PublicKey   // public key of tx initiator
