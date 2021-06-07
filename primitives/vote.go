@@ -1,6 +1,8 @@
 package primitives
 
-import "crypto/ecdsa"
+import (
+	"crypto/ecdsa"
+)
 
 type Vote struct {
 	/**
@@ -14,3 +16,19 @@ type Vote struct {
 	Hash       string            // hash of the tx
 	Timestamp  uint64            // Unix timestamp of tx in seconds
 }
+
+/**
+	string data from client ->	pubkeyhex|candidate,candidate,candidate|signature|timestamp
+	This is broken down by node
+**/
+
+// func (v *Vote) UnpackClientString(data string) {
+// 	vote := strings.Split(data, "|")
+// 	for i, val := range vote {
+// 		switch i{
+// 		case 0:
+// 			v.Address
+// 		}
+// 	}
+
+// }
