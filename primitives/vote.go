@@ -8,9 +8,9 @@ type Vote struct {
 	Mobile clients submits vote via TCP socket connection & node packs it into a Vote
 	**/
 
-	address    ecdsa.PublicKey   // public key of tx initiator
-	candidates []ecdsa.PublicKey // list of candidtes selected by initiator
-	signature  []byte            // signature by the initiator's public key
-	hash       string            // hash of the tx
-	timestamp  uint64            // Unix timestamp of tx in seconds
+	Address    ecdsa.PublicKey   // public key of tx initiator
+	Candidates []ecdsa.PublicKey // list of candidtes selected by initiator
+	Signature  []byte            // signature by the initiator's public key
+	Hash       string            // hash of the tx
+	Timestamp  uint64            // Unix timestamp of tx in seconds
 }

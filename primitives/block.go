@@ -12,10 +12,10 @@ type Block struct {
 	will be stored in web server and prior to election their addressess sent to nodes and packed into
 	a block. The block will be queried prior to casting a vote to ensure the voter was registered
 	**/
-	votes      []Vote // list of votes representing candidates/voters (if genesis block) and cast votes if not genesis
-	hash       string // hash of the block (votes hashes + block hash)
-	prevHash   string // hash of previous block in the chain
-	timestamp  uint64 // Unix timestamp of tx in seconds
-	nonce      uint64 // Proof of work tries
-	difficulty uint64 // Proof of work difficulty
+	Votes      []Vote // list of votes representing candidates/voters (if genesis block) and cast votes if not genesis
+	Hash       string // hash of the block (votes hashes + block hash)
+	PrevHash   string // hash of previous block in the chain
+	Timestamp  uint64 // Unix timestamp of tx in seconds
+	Nonce      uint64 // Proof of work tries
+	Difficulty uint64 // Proof of work difficulty
 }
