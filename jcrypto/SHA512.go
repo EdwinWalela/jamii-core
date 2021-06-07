@@ -1,4 +1,4 @@
-package crypt
+package jcrypto
 
 import (
 	"crypto/sha512"

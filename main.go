@@ -2,22 +2,21 @@ package main
 
 func main() {
 	/** Key pair generation and signing **/
-	/**
-	kp := &crypt.KeyPair{}
 
-	crypt.GenKeyPair(kp) // Generate key pair
+	// kp := &jcrypto.KeyPair{}
 
-	hash := crypt.SHA512("hello world") // hash data
+	// jcrypto.GenKeyPair(kp) // Generate key pair
 
-	signature, err := kp.Sign(hash) // sign hash
+	// hash := jcrypto.SHA512("hello world") // hash data
 
-	if err != nil {
-		log.Println("signing failed:", err)
-	}
+	// signature, err := kp.Sign(hash) // sign hash
 
-	valid := kp.Verify([]byte(hash), signature) // verify hash with signature
+	// if err != nil {
+	// 	log.Println("signing failed:", err)
+	// }
 
-	fmt.Println(valid)
-	**/
+	// valid := kp.Verify([]byte(hash), signature) // verify hash with signature
+
+	// fmt.Println(valid)
 
 }
