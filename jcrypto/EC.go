@@ -21,3 +21,11 @@ func GenKeyPair(kp *KeyPair, seed string) error {
 
 	return nil
 }
+
+func PubKeyFromBytes(key []byte, kp *KeyPair) {
+	kp.PubKey.FromBytes(key)
+}
+
+func VerifySig(sig, msg []byte, kp *KeyPair) bool {
+	return kp.PubKey.Verify(sig, msg)
+}
