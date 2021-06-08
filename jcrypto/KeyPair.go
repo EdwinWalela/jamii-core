@@ -1,14 +1,14 @@
 package jcrypto
 
 import (
-	"crypto/ecdsa"
-	"crypto/rand"
 	"errors"
+
+	"github.com/katzenpost/core/crypto/eddsa"
 )
 
 type KeyPair struct {
-	PrivKey ecdsa.PrivateKey
-	PubKey  ecdsa.PublicKey
+	PrivKey eddsa.PrivateKey
+	PubKey  eddsa.PublicKey
 }
 
 func (kp *KeyPair) Sign(src string) ([]byte, error) {
@@ -17,15 +17,7 @@ func (kp *KeyPair) Sign(src string) ([]byte, error) {
 		return nil, errors.New("Keypair not generated")
 	}
 
-	sig, err := ecdsa.SignASN1(rand.Reader, &kp.PrivKey, []byte(src))
-
-	if err != nil {
-		return nil, err
-	}
+	sig := kp.PrivKey.Sign([]byte(src))
 
 	return sig, nil
-}
-
-func (kp *KeyPair) Verify(hash, sig []byte) bool {
-	return ecdsa.VerifyASN1(&kp.PubKey, hash, sig)
 }

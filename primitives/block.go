@@ -2,7 +2,7 @@ package primitives
 
 type Block struct {
 	/**
-	Genesis block will contain a single Vote with the candidates field indicating registered
+	Genesis block will contain a single Vote(tx) with the candidates field indicating registered
 	election candidtes. Address of genesis block will be null
 
 	Genesis block data will be obtained from institution's webserver and sent to nodes prior

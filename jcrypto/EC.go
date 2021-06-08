@@ -1,33 +1,22 @@
 package jcrypto
 
 import (
-	"crypto/ecdsa"
-	"crypto/elliptic"
 	"crypto/rand"
-	"math/big"
+
+	"github.com/katzenpost/core/crypto/eddsa"
 )
 
 func GenKeyPair(kp *KeyPair, seed string) error {
-	var privKey *ecdsa.PrivateKey
+	var privKey *eddsa.PrivateKey
 	var err error
 
-	if seed != "" {
-		k := new(big.Int)
-		k.SetString(seed, 16)
+	privKey, err = eddsa.NewKeypair(rand.Reader)
 
-		privKey = new(ecdsa.PrivateKey)
-		privKey.PublicKey.Curve = elliptic.P256()
-		privKey.D = k
+	kp.PrivKey = *privKey
+	kp.PubKey = *privKey.PublicKey()
 
-		privKey.PublicKey.X, privKey.PublicKey.Y = elliptic.P256().ScalarBaseMult(k.Bytes())
-
-	} else {
-		privKey, err = ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-		if err != nil {
-			return err
-		}
-		kp.PrivKey = *privKey
-		kp.PubKey = *&privKey.PublicKey
+	if err != nil {
+		return err
 	}
 
 	return nil
