@@ -3,6 +3,8 @@ package server
 import (
 	"fmt"
 	"net"
+	"reflect"
+	"unsafe"
 )
 
 type Server struct {
@@ -25,6 +27,7 @@ func (server *Server) Init() error {
 }
 
 func (server *Server) Accept() error {
+
 	for {
 		client, err := server.conn.Accept()
 
@@ -34,15 +37,20 @@ func (server *Server) Accept() error {
 		}
 		fmt.Println("server:Client connected.")
 		fmt.Println("server:Client " + client.RemoteAddr().String() + " connected.")
-		client.Write([]byte("hello"))
+		tmp := make([]byte, 1064)
+		client.Read(tmp)
+		fmt.Println(BytesToString(tmp))
 		server.Clients = append(server.Clients, client)
+
 	}
 }
 
 func (server *Server) Read() {
 	for _, client := range server.Clients {
-		fmt.Println("Recieved block from peer")
-		client.RemoteAddr()
+		// fmt.Println("Recieved block from peer")
+		tmp := make([]byte, 64)
+		client.Read(tmp)
+		fmt.Println(tmp)
 	}
 }
 func (server *Server) Connections() int {
@@ -51,4 +59,10 @@ func (server *Server) Connections() int {
 
 func (server *Server) HandleConnection() {
 
+}
+
+func BytesToString(b []byte) string {
+	bh := (*reflect.SliceHeader)(unsafe.Pointer(&b))
+	sh := reflect.StringHeader{bh.Data, bh.Len}
+	return *(*string)(unsafe.Pointer(&sh))
 }

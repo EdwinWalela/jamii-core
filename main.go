@@ -1,9 +1,10 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 
-	"github.com/edwinwalela/jamii-core/primitives"
+	"github.com/edwinwalela/jamii-core/net/server"
 )
 
 func main() {
@@ -43,15 +44,34 @@ func main() {
 	// valid := jcrypto.VerifySig(decodedSig, []byte("hello world"), kp)
 
 	// fmt.Println(valid)
-	/** Vote Unpacking **/
-	v := &primitives.Vote{}
-	clientData := "309ecc489c12d6eb4cc40f50c902f2b4d0ed77ee511a7c7a9bcd3ca86d4cd86f989dd35bc5ff499670da34255b45b0cfd830e81f605dcf7dc5542e93ae9cd76f|Z/Yg3ETYDRBlXcDy09p/NOyQRGycYRU8kNPsTRkwqRYpiz8ljL87u8fg/x/xzpELh65Af95kIeV2zoV++CbiDw==|rLPdtJDVywkcufc0kSQpmGnQ8sc6frPvVbMWYfwkFj0=|rLPdtJDVywkcufc0kSQpmGnQ8sc6frPvVbMWYfwkFj0=,rLPdtJDVywkcufc0kSQpmGnQ8sc6frPvVbMWYfwkFj0=,rLPdtJDVywkcufc0kSQpmGnQ8sc6frPvVbMWYfwkFj0=,rLPdtJDVywkcufc0kSQpmGnQ8sc6frPvVbMWYfwkFj0=|1623142046"
-	v.UnpackClientString(clientData)
 
-	fmt.Println("Address: ", v.Address)
-	fmt.Println("Candidates: ", v.Candidates)
-	fmt.Println("Signature: ", v.Signature)
-	fmt.Println("Hash:", v.Hash)
-	fmt.Println("Timestamp: ", v.Timestamp)
+	/** Vote Unpacking **/
+	// v := &primitives.Vote{}
+	// clientData := "309ecc489c12d6eb4cc40f50c902f2b4d0ed77ee511a7c7a9bcd3ca86d4cd86f989dd35bc5ff499670da34255b45b0cfd830e81f605dcf7dc5542e93ae9cd76f|Z/Yg3ETYDRBlXcDy09p/NOyQRGycYRU8kNPsTRkwqRYpiz8ljL87u8fg/x/xzpELh65Af95kIeV2zoV++CbiDw==|rLPdtJDVywkcufc0kSQpmGnQ8sc6frPvVbMWYfwkFj0=|rLPdtJDVywkcufc0kSQpmGnQ8sc6frPvVbMWYfwkFj0=,rLPdtJDVywkcufc0kSQpmGnQ8sc6frPvVbMWYfwkFj0=,rLPdtJDVywkcufc0kSQpmGnQ8sc6frPvVbMWYfwkFj0=,rLPdtJDVywkcufc0kSQpmGnQ8sc6frPvVbMWYfwkFj0=|1623142046"
+	// v.UnpackClientString(clientData)
+
+	// fmt.Println("Address: ", v.Address)
+	// fmt.Println("Candidates: ", v.Candidates)
+	// fmt.Println("Signature: ", v.Signature)
+	// fmt.Println("Hash:", v.Hash)
+	// fmt.Println("Timestamp: ", v.Timestamp)
+
+	exit := make(chan int)
+	localPortPtr := flag.Int("local", 3000, "local Websocket server port")
+	flag.Parse()
+
+	server := &server.Server{Host: "localhost", Network: "tcp", Port: *localPortPtr}
+
+	// Initialize local server
+	if err := server.Init(); err != nil {
+		fmt.Println("Unable to create TCP connection\n", err)
+	}
+
+	go func() {
+		server.Accept()
+		server.Read()
+	}()
+
+	exit <- 1
 
 }
