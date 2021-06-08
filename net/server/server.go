@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"reflect"
+	"strings"
 	"unsafe"
 )
 
@@ -35,11 +36,29 @@ func (server *Server) Accept() error {
 			fmt.Println("Error connecting:", err.Error())
 			return err
 		}
-		fmt.Println("server:Client connected.")
 		fmt.Println("server:Client " + client.RemoteAddr().String() + " connected.")
-		tmp := make([]byte, 1064)
+		tmp := make([]byte, 1024)
 		client.Read(tmp)
-		fmt.Println(BytesToString(tmp))
+
+		decoded := strings.Split(BytesToString(tmp), "\n")
+		decoded = decoded[1 : len(decoded)-1]
+		for _, v := range decoded {
+			headerData := strings.Split(v, ":")
+
+			headerExtract := strings.Replace(strings.Join(headerData, ","), " ", "", -1)
+			headerList := strings.Split(headerExtract, ",")
+			for i, val := range headerList {
+				switch val {
+				case "Source":
+					fmt.Println("source:" + headerList[i+1])
+				case "Type":
+					fmt.Println("msg-type:" + headerList[i+1])
+				case "Data":
+					fmt.Println("data:" + headerList[i+1])
+				}
+			}
+
+		}
 		server.Clients = append(server.Clients, client)
 
 	}
