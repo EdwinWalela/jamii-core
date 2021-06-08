@@ -46,6 +46,7 @@ func (v *Vote) UnpackClientString(data string) error {
 			pub64 = val
 		case 3: // Extract candidates []pub64
 			for _, candidatePub64 := range strings.Split(val, ",") {
+
 				decodedPub, pubErr := base64.StdEncoding.DecodeString(candidatePub64)
 
 				if pubErr != nil {
