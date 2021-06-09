@@ -5,7 +5,10 @@ import (
 	"net"
 	"reflect"
 	"strings"
+	"time"
 	"unsafe"
+
+	"github.com/edwinwalela/jamii-core/net/peer"
 )
 
 type Server struct {
@@ -13,7 +16,8 @@ type Server struct {
 	Host    string
 	Network string
 	Port    int
-	Clients []net.Conn
+	Clients []net.Conn // Mobile Clients
+	Peers   []net.Conn // Node Peers
 }
 
 func (server *Server) Init() error {
@@ -27,26 +31,34 @@ func (server *Server) Init() error {
 	return nil
 }
 
-func (server *Server) Accept() error {
+func (server *Server) Accept(peerList *[]peer.Peer) error {
 
 	for {
 		client, err := server.conn.Accept()
-
+		var source string
 		if err != nil {
 			fmt.Println("Error connecting:", err.Error())
 			return err
 		}
 		fmt.Println("server:Client " + client.RemoteAddr().String() + " connected.")
+
 		tmp := make([]byte, 1024)
+		client.SetDeadline(time.Now().Add(time.Second * 5))
 		client.Read(tmp)
 
 		decoded := strings.Split(BytesToString(tmp), "\n")
+		if len(decoded) <= 1 {
+			*peerList = append(*peerList, peer.Peer{Conn: client})
+			continue
+		}
 		decoded = decoded[1 : len(decoded)-1]
-		for _, v := range decoded {
-			headerData := strings.Split(v, ":")
 
+		for _, v := range decoded {
+
+			headerData := strings.Split(v, ":")
 			headerExtract := strings.Replace(strings.Join(headerData, ","), " ", "", -1)
 			headerList := strings.Split(headerExtract, ",")
+
 			for i, val := range headerList {
 				switch val {
 				case "Source":
@@ -59,14 +71,16 @@ func (server *Server) Accept() error {
 			}
 
 		}
-		server.Clients = append(server.Clients, client)
+		if source == "Client" {
+			server.Clients = append(server.Clients, client)
+		}
 
 	}
 }
 
 func (server *Server) Read() {
 	for _, client := range server.Clients {
-		// fmt.Println("Recieved block from peer")
+		fmt.Println("Recieved block from peer")
 		tmp := make([]byte, 64)
 		client.Read(tmp)
 		fmt.Println(tmp)

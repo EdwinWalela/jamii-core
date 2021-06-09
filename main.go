@@ -4,6 +4,8 @@ import (
 	"flag"
 	"fmt"
 
+	"github.com/edwinwalela/jamii-core/cli"
+	"github.com/edwinwalela/jamii-core/net/peer"
 	"github.com/edwinwalela/jamii-core/net/server"
 )
 
@@ -57,20 +59,22 @@ func main() {
 	// fmt.Println("Timestamp: ", v.Timestamp)
 
 	exit := make(chan int)
+	var connectedPeers []peer.Peer
+
 	localPortPtr := flag.Int("local", 3000, "local Websocket server port")
 	flag.Parse()
 
 	server := &server.Server{Host: "localhost", Network: "tcp", Port: *localPortPtr}
-
 	// Initialize local server
 	if err := server.Init(); err != nil {
 		fmt.Println("Unable to create TCP connection\n", err)
 	}
-
 	go func() {
-		server.Accept()
-		server.Read()
+		server.Accept(&connectedPeers)
+
 	}()
+
+	cli.MainMenu(&connectedPeers)
 
 	exit <- 1
 
