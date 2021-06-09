@@ -23,7 +23,6 @@ func (peer *Peer) Bind() error {
 	}
 	peer.Connected = true
 	fmt.Println("client:Connected to remote on:" + peer.Conn.RemoteAddr().String())
-
 	return nil
 }
 

@@ -18,7 +18,6 @@ var kp *jcrypto.KeyPair         // Node's KeyPair
 func MainMenu(peerList *[]peer.Peer) {
 	connectedPeers = peerList
 	fmt.Println("----------------\n Jamii Core v0.01\n----------------")
-
 	GenPair()       // generate pair or read from file
 	DiscoverPeers() // attempt to connect to peers
 
@@ -60,6 +59,12 @@ func DiscoverPeers() {
 		fmt.Printf("Connected to %d peers...\n", len(*connectedPeers))
 	} else {
 		fmt.Println("No peers online.")
+	}
+}
+
+func BroadcastToPeers() {
+	for _, peer := range *connectedPeers {
+		peer.Write()
 	}
 }
 

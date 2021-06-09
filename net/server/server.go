@@ -41,11 +41,10 @@ func (server *Server) Accept(peerList *[]peer.Peer) error {
 			return err
 		}
 		fmt.Println("server:Client " + client.RemoteAddr().String() + " connected.")
-
 		tmp := make([]byte, 1024)
-		client.SetDeadline(time.Now().Add(time.Second * 5))
-		client.Read(tmp)
-
+		client.SetReadDeadline(time.Now().Add(time.Second * 2))
+		i, e := client.Read(tmp)
+		fmt.Println(i, ":", e)
 		decoded := strings.Split(BytesToString(tmp), "\n")
 		if len(decoded) <= 1 {
 			*peerList = append(*peerList, peer.Peer{Conn: client})

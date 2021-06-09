@@ -71,7 +71,6 @@ func main() {
 	}
 	go func() {
 		server.Accept(&connectedPeers)
-
 	}()
 
 	cli.MainMenu(&connectedPeers)

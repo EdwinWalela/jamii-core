@@ -9,7 +9,6 @@ import (
 func GenKeyPair(kp *KeyPair, seed string) error {
 	var privKey *eddsa.PrivateKey
 	var err error
-
 	privKey, err = eddsa.NewKeypair(rand.Reader)
 
 	kp.PrivKey = *privKey
