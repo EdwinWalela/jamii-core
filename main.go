@@ -4,9 +4,9 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/edwinwalela/jamii-core/cli"
 	"github.com/edwinwalela/jamii-core/net/peer"
 	"github.com/edwinwalela/jamii-core/net/server"
+	"github.com/edwinwalela/jamii-core/primitives"
 )
 
 func main() {
@@ -73,7 +73,28 @@ func main() {
 		server.Accept(&connectedPeers)
 	}()
 
-	cli.MainMenu(&connectedPeers)
+	v := &primitives.Vote{}
+	clientData := "ea301ceb1ba7df7be32b573fb9c6dc8c7e2121a9d7ecee1d78a94aa201145f39c44b766144bd354b348c7ab7f2d681f3df6095ec577e3cee11a29dea115ee815|vfeMgOgZ6q4QUxTNzvG3/iQKnfCSiRYKiUoexXNEOo7XQJxX1/57L7A1XcLSp6XSIQ70XSYXvYcHCC0cY5qnBA==|StpW0TTiB2G3vaHyRfF35sqhA7misfUw7Uj7lsVK1Hs=|StpW0TTiB2G3vaHyRfF35sqhA7misfUw7Uj7lsVK1Hs=.StpW0TTiB2G3vaHyRfF35sqhA7misfUw7Uj7lsVK1Hs=.StpW0TTiB2G3vaHyRfF35sqhA7misfUw7Uj7lsVK1Hs=.StpW0TTiB2G3vaHyRfF35sqhA7misfUw7Uj7lsVK1Hs=|1623308754005"
+
+	if isValid, err := v.UnpackClientString(clientData); err != nil {
+		fmt.Println(err)
+	} else if isValid {
+		fmt.Println("Vote accepted")
+	}
+
+	// cli.MainMenu(&connectedPeers)
+
+	// Generate Key Pair
+
+	// Attempt to connect to peers
+
+	// Read Blocks from memory
+
+	// If no blocks request from peers
+
+	// Check chain
+
+	// Initalize chain
 
 	exit <- 1
 

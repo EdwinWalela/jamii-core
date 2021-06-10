@@ -2,6 +2,8 @@ package primitives
 
 import (
 	"encoding/base64"
+	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -27,7 +29,7 @@ type Vote struct {
 	This is broken down by node
 **/
 
-func (v *Vote) UnpackClientString(data string) error {
+func (v *Vote) UnpackClientString(data string) (bool, error) {
 
 	vote := strings.Split(data, "|")
 
@@ -45,12 +47,12 @@ func (v *Vote) UnpackClientString(data string) error {
 		case 2: // Extract pub64
 			pub64 = val
 		case 3: // Extract candidates []pub64
-			for _, candidatePub64 := range strings.Split(val, ",") {
+			for _, candidatePub64 := range strings.Split(val, ".") {
 
 				decodedPub, pubErr := base64.StdEncoding.DecodeString(candidatePub64)
 
 				if pubErr != nil {
-					return pubErr
+					return false, pubErr
 				}
 				kp := &jcrypto.KeyPair{}
 				jcrypto.PubKeyFromBytes(decodedPub, kp)
@@ -59,7 +61,7 @@ func (v *Vote) UnpackClientString(data string) error {
 		case 4:
 			v.Timestamp, uintErr = strconv.ParseUint(val, 10, 64)
 			if uintErr != nil {
-				return uintErr
+				return false, uintErr
 			}
 		}
 	}
@@ -68,11 +70,11 @@ func (v *Vote) UnpackClientString(data string) error {
 	decodedSig, sigErr := base64.StdEncoding.DecodeString(sig64)
 
 	if pubErr != nil {
-		return pubErr
+		return false, pubErr
 	}
 
 	if sigErr != nil {
-		return sigErr
+		return false, sigErr
 	}
 
 	kp := &jcrypto.KeyPair{}
@@ -82,6 +84,22 @@ func (v *Vote) UnpackClientString(data string) error {
 	v.Address = kp.PubKey
 	v.Signature = decodedSig
 	v.Candidates = candidates
+	if v.hash() != v.Hash {
+		return false, errors.New("Invalid Vote Hash")
+	}
+	return true, nil
+}
 
-	return nil
+func (v *Vote) hash() string {
+	_hash := ""
+
+	_hash += v.Address.String()
+
+	for _, candidate := range v.Candidates {
+		_hash += candidate.String()
+	}
+
+	_hash += fmt.Sprintf("%d", v.Timestamp)
+
+	return jcrypto.SHA512(_hash)
 }

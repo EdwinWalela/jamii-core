@@ -56,16 +56,17 @@ func (server *Server) Accept(peerList *[]peer.Peer) error {
 
 			headerData := strings.Split(v, ":")
 			headerExtract := strings.Replace(strings.Join(headerData, ","), " ", "", -1)
+
 			headerList := strings.Split(headerExtract, ",")
 
 			for i, val := range headerList {
 				switch val {
 				case "Source":
-					fmt.Println("source:" + headerList[i+1])
+					// fmt.Println("source:" + headerList[i+1])
 				case "Type":
-					fmt.Println("msg-type:" + headerList[i+1])
+					// fmt.Println("msg-type:" + headerList[i+1])
 				case "Data":
-					fmt.Println("data:" + headerList[i+1])
+					fmt.Println(headerList[i+1])
 				}
 			}
 

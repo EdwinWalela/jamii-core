@@ -20,7 +20,6 @@ func MainMenu(peerList *[]peer.Peer) {
 	fmt.Println("----------------\n Jamii Core v0.01\n----------------")
 	GenPair()       // generate pair or read from file
 	DiscoverPeers() // attempt to connect to peers
-
 }
 
 func GenPair() {
