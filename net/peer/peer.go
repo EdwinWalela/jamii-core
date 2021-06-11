@@ -1,49 +1,30 @@
 package peer
 
 import (
-	"fmt"
-	"log"
-	"net"
+	"net/http"
+
+	gosocketio "github.com/graarh/golang-socketio"
+	"github.com/graarh/golang-socketio/transport"
 )
 
-type Peer struct {
-	Conn      net.Conn
-	Host      string
-	Network   string
-	Port      int
-	Connected bool
+type PeerConnection struct {
+	Peer        *gosocketio.Client
+	Host        string
+	Port        int
+	SkTransport *transport.WebsocketTransport
 }
 
-func (peer *Peer) Bind() error {
-	var err error
-	peer.Conn, err = net.Dial(peer.Network, peer.Host+":"+fmt.Sprint(peer.Port))
-
-	if err != nil {
-		return err
-	}
-	peer.Connected = true
-	fmt.Println("client:Connected to remote on:" + peer.Conn.RemoteAddr().String())
-	return nil
+func (p *PeerConnection) Init() {
+	p.SkTransport = transport.GetDefaultWebsocketTransport()
+	p.SkTransport.RequestHeader = http.Header{}
 }
 
-func (peer *Peer) Write() {
-	fmt.Println("Sending my block to peer")
-	_, err := peer.Conn.Write([]byte("hello world"))
-	if err != nil {
-		fmt.Println("Error", err)
-	}
+func (p *PeerConnection) SetSource(source string) {
+	p.SkTransport.RequestHeader.Add("source", source)
 }
 
-func (peer *Peer) Read() {
-	var buf = make([]byte, 4096)
-	var tmp = make([]byte, 256)
-	n, err := peer.Conn.Read(tmp)
-
-	if err != nil {
-		log.Println("Pread:", err)
-	}
-
-	buf = append(buf, tmp[:n]...)
-
-	fmt.Println("Read from server")
+func (p *PeerConnection) Dial() (*gosocketio.Client, error) {
+	return gosocketio.Dial(
+		gosocketio.GetUrl(p.Host, p.Port, false),
+		p.SkTransport)
 }

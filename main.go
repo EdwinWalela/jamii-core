@@ -1,13 +1,18 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
+	"log"
+	"net/http"
 
 	"github.com/edwinwalela/jamii-core/net/peer"
-	"github.com/edwinwalela/jamii-core/net/server"
-	"github.com/edwinwalela/jamii-core/primitives"
+	gosocketio "github.com/graarh/golang-socketio"
+	"github.com/graarh/golang-socketio/transport"
 )
+
+var exit = make(chan int)
 
 func main() {
 	/** Key pair generation and signing **/
@@ -58,28 +63,109 @@ func main() {
 	// fmt.Println("Hash:", v.Hash)
 	// fmt.Println("Timestamp: ", v.Timestamp)
 
-	exit := make(chan int)
-	var connectedPeers []peer.Peer
+	server := gosocketio.NewServer(transport.GetDefaultWebsocketTransport())
+	localPortPtr := flag.String("local", "3000", "local socket server")
+	remortPortPtr := flag.Int("remote", 4000, "local socket server")
 
-	localPortPtr := flag.Int("local", 3000, "local Websocket server port")
 	flag.Parse()
 
-	server := &server.Server{Host: "localhost", Network: "tcp", Port: *localPortPtr}
-	// Initialize local server
-	if err := server.Init(); err != nil {
-		fmt.Println("Unable to create TCP connection\n", err)
-	}
+	server.On(gosocketio.OnConnection, func(c *gosocketio.Channel) {
+		log.Println("Connected")
+
+		source := c.RequestHeader().Get("source")
+
+		switch source {
+		case "peer":
+			c.Join("peers")
+			log.Println("added peer to peer channel")
+		case "client":
+			c.Join("clients")
+		}
+	})
+
+	server.On(gosocketio.OnDisconnection, func(c *gosocketio.Channel) {
+		log.Println("Disconnected")
+	})
+
+	// Accept new block from peer, check and add to local chain
+	server.On("new-bloc", func(c *gosocketio.Channel) {
+
+	})
+
+	// Handle vote message from clients
+	server.On("vote", func(c *gosocketio.Channel, msg string) string {
+		log.Println("Recieved vote")
+		voteStr := []byte(msg)
+		var voteObj map[string]string
+
+		if err := json.Unmarshal(voteStr, &voteObj); err != nil {
+			log.Println(err)
+		}
+
+		// Validate vote
+		log.Println("Vote accepted")
+		// fmt.Println(voteObj["source"])
+
+		return "OK"
+		// fmt.Println(v)
+	})
+
+	// Send back latest block
+	server.On("latest-block", func(c *gosocketio.Channel) {
+
+	})
+
+	// Send back block height
+	server.On("block-height", func(c *gosocketio.Channel) {
+
+	})
+
+	// Send back requested block
+	server.On("get-block-by-height", func(c *gosocketio.Channel) {
+
+	})
+
+	serveMux := http.NewServeMux()
+	serveMux.Handle("/socket.io/", server)
+
+	log.Printf("Starting server on port %s...\n", *localPortPtr)
 	go func() {
-		server.Accept(&connectedPeers)
+		log.Panic(http.ListenAndServe(fmt.Sprintf(":%s", *localPortPtr), serveMux))
 	}()
 
-	v := &primitives.Vote{}
-	clientData := "ea301ceb1ba7df7be32b573fb9c6dc8c7e2121a9d7ecee1d78a94aa201145f39c44b766144bd354b348c7ab7f2d681f3df6095ec577e3cee11a29dea115ee815|vfeMgOgZ6q4QUxTNzvG3/iQKnfCSiRYKiUoexXNEOo7XQJxX1/57L7A1XcLSp6XSIQ70XSYXvYcHCC0cY5qnBA==|StpW0TTiB2G3vaHyRfF35sqhA7misfUw7Uj7lsVK1Hs=|StpW0TTiB2G3vaHyRfF35sqhA7misfUw7Uj7lsVK1Hs=.StpW0TTiB2G3vaHyRfF35sqhA7misfUw7Uj7lsVK1Hs=.StpW0TTiB2G3vaHyRfF35sqhA7misfUw7Uj7lsVK1Hs=.StpW0TTiB2G3vaHyRfF35sqhA7misfUw7Uj7lsVK1Hs=|1623308754005"
+	// Try to Connect to peers from server and store their connections
+	peers := []string{
+		"localhost",
+		"a.com",
+		"b.com",
+		"c.com",
+		"d.com",
+	}
 
-	if isValid, err := v.UnpackClientString(clientData); err != nil {
-		fmt.Println(err)
-	} else if isValid {
-		fmt.Println("Vote accepted")
+	fmt.Scanln() // Block
+
+	for i := range peers { // Attempt to connect to peers from server
+
+		go func(url *string) {
+			p := peer.PeerConnection{Host: *url}
+
+			p.Port = *remortPortPtr // Set Default port
+			p.Init()
+			p.SetSource("peer")
+			c, err := p.Dial() // Attempt to connect to peer
+			if err != nil {
+				log.Printf("Peer %s not found", *url)
+				return
+			}
+			log.Println("connected to peer")
+
+			// Event handlers
+			c.On("block", func(msg string) {
+				log.Println("recieved block from peer\n", msg)
+			})
+
+		}(&peers[i])
+
 	}
 
 	// cli.MainMenu(&connectedPeers)
