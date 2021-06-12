@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
+	"strings"
 
 	"github.com/edwinwalela/jamii-core/net/peer"
 	gosocketio "github.com/graarh/golang-socketio"
@@ -65,31 +67,31 @@ func main() {
 
 	server := gosocketio.NewServer(transport.GetDefaultWebsocketTransport())
 	localPortPtr := flag.String("local", "3000", "local socket server")
-	remortPortPtr := flag.Int("remote", 4000, "local socket server")
 
 	flag.Parse()
 
+	// call when mined new block
+	// server.BroadcastTo("peers", "new-block", "the block")
+
 	server.On(gosocketio.OnConnection, func(c *gosocketio.Channel) {
-		log.Println("Connected")
 
 		source := c.RequestHeader().Get("source")
 
 		switch source {
 		case "peer":
-			c.Join("peers")
-			log.Println("added peer to peer channel")
+			err := c.Join("peers")
+			log.Println(err)
+			log.Printf("%s added to peers channel\n", c.Ip())
+			log.Printf("total members: %d\n", c.Amount("peers"))
 		case "client":
 			c.Join("clients")
+			log.Printf("%s added to clients channel\n", c.Ip())
+			log.Printf("total members: %d\n", c.Amount("peers"))
 		}
 	})
 
 	server.On(gosocketio.OnDisconnection, func(c *gosocketio.Channel) {
 		log.Println("Disconnected")
-	})
-
-	// Accept new block from peer, check and add to local chain
-	server.On("new-bloc", func(c *gosocketio.Channel) {
-
 	})
 
 	// Handle vote message from clients
@@ -110,6 +112,11 @@ func main() {
 		// fmt.Println(v)
 	})
 
+	// Accept new block from peer, check and add to local chain
+	server.On("block", func(c *gosocketio.Channel) {
+		log.Println("server.onbloc")
+	})
+
 	// Send back latest block
 	server.On("latest-block", func(c *gosocketio.Channel) {
 
@@ -128,14 +135,14 @@ func main() {
 	serveMux := http.NewServeMux()
 	serveMux.Handle("/socket.io/", server)
 
-	log.Printf("Starting server on port %s...\n", *localPortPtr)
 	go func() {
+		log.Printf("Starting server on port %s...\n", *localPortPtr)
 		log.Panic(http.ListenAndServe(fmt.Sprintf(":%s", *localPortPtr), serveMux))
 	}()
 
 	// Try to Connect to peers from server and store their connections
 	peers := []string{
-		"localhost",
+		"localhost:3000",
 		"a.com",
 		"b.com",
 		"c.com",
@@ -148,8 +155,16 @@ func main() {
 
 		go func(url *string) {
 			p := peer.PeerConnection{Host: *url}
+			var err error
+			rawUrl := strings.Split(*url, ":")
 
-			p.Port = *remortPortPtr // Set Default port
+			if len(rawUrl) > 1 { // Extract port from URL
+				p.Port, _ = strconv.Atoi(rawUrl[1])
+				p.Host = rawUrl[0]
+			} else {
+				p.Port = 3000 // Set Default port
+			}
+
 			p.Init()
 			p.SetSource("peer")
 			c, err := p.Dial() // Attempt to connect to peer
@@ -157,11 +172,9 @@ func main() {
 				log.Printf("Peer %s not found", *url)
 				return
 			}
-			log.Println("connected to peer")
 
-			// Event handlers
-			c.On("block", func(msg string) {
-				log.Println("recieved block from peer\n", msg)
+			c.On("block", func(h *gosocketio.Channel, args string) {
+				log.Println("c.onblock called", args)
 			})
 
 		}(&peers[i])
@@ -181,6 +194,11 @@ func main() {
 	// Check chain
 
 	// Initalize chain
+
+	fmt.Scanln()
+	fmt.Println(server.Amount("peers"))
+	log.Println("broadcasting block to peers")
+	server.BroadcastTo("peers", "block", "here's the bloc")
 
 	exit <- 1
 
