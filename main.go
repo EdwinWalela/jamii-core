@@ -14,9 +14,18 @@ import (
 	"github.com/graarh/golang-socketio/transport"
 )
 
+const (
+	ON_CLIENT_VOTE         = "vote"
+	ON_CLIENT_LATEST_BLOCK = "latest-block"
+	ON_BLOCK_HEIGHT        = "block-height"
+	ON_BLOCK_AT_HEIGHT     = "block-at-height"
+	PEER_BLOCK_BROADCAST   = "peer-block-broadcast"
+)
+
 var exit = make(chan int)
 
 func main() {
+
 	/** Key pair generation and signing **/
 
 	// kp := &jcrypto.KeyPair{}
@@ -99,7 +108,7 @@ func main() {
 	})
 
 	// Handle vote message from clients
-	server.On("vote", func(c *gosocketio.Channel, msg string) string {
+	server.On(ON_CLIENT_VOTE, func(c *gosocketio.Channel, msg string) string {
 		log.Println("Recieved vote")
 		voteStr := []byte(msg)
 		var voteObj map[string]string
@@ -117,17 +126,17 @@ func main() {
 	})
 
 	// Send back latest block
-	server.On("latest-block", func(c *gosocketio.Channel) {
+	server.On(ON_CLIENT_LATEST_BLOCK, func(c *gosocketio.Channel) {
 
 	})
 
 	// Send back currrent block height
-	server.On("block-height", func(c *gosocketio.Channel) {
+	server.On(ON_BLOCK_HEIGHT, func(c *gosocketio.Channel) {
 
 	})
 
 	// Send back requested block
-	server.On("get-block-by-height", func(c *gosocketio.Channel) {
+	server.On(ON_BLOCK_AT_HEIGHT, func(c *gosocketio.Channel) {
 
 	})
 
@@ -173,7 +182,7 @@ func main() {
 			}
 
 			// Accept new block from peer, check and add to local chain
-			c.On("block", func(h *gosocketio.Channel, args string) {
+			c.On(PEER_BLOCK_BROADCAST, func(h *gosocketio.Channel, args string) {
 				log.Println("c.onblock called", args)
 			})
 
