@@ -67,11 +67,15 @@ func main() {
 
 	server := gosocketio.NewServer(transport.GetDefaultWebsocketTransport())
 	localPortPtr := flag.String("local", "3000", "local socket server")
+	// tunnelUrlPtr := flag.String("tunnel", "", "Local tunnel URL (Ngrok)")
 
 	flag.Parse()
 
-	// call when mined new block
-	// server.BroadcastTo("peers", "new-block", "the block")
+	// if *tunnelUrlPtr == "" {
+	// 	log.Fatal("Local Tunnel URL not provided")
+	// }
+
+	// Send tunnelURL to server for storage
 
 	server.On(gosocketio.OnConnection, func(c *gosocketio.Channel) {
 
@@ -112,17 +116,12 @@ func main() {
 		// fmt.Println(v)
 	})
 
-	// Accept new block from peer, check and add to local chain
-	server.On("block", func(c *gosocketio.Channel) {
-		log.Println("server.onbloc")
-	})
-
 	// Send back latest block
 	server.On("latest-block", func(c *gosocketio.Channel) {
 
 	})
 
-	// Send back block height
+	// Send back currrent block height
 	server.On("block-height", func(c *gosocketio.Channel) {
 
 	})
@@ -142,7 +141,7 @@ func main() {
 
 	// Try to Connect to peers from server and store their connections
 	peers := []string{
-		"localhost:3000",
+		"localhost:4000",
 		"a.com",
 		"b.com",
 		"c.com",
@@ -173,6 +172,7 @@ func main() {
 				return
 			}
 
+			// Accept new block from peer, check and add to local chain
 			c.On("block", func(h *gosocketio.Channel, args string) {
 				log.Println("c.onblock called", args)
 			})
@@ -180,8 +180,6 @@ func main() {
 		}(&peers[i])
 
 	}
-
-	// cli.MainMenu(&connectedPeers)
 
 	// Generate Key Pair
 
@@ -195,9 +193,7 @@ func main() {
 
 	// Initalize chain
 
-	fmt.Scanln()
-	fmt.Println(server.Amount("peers"))
-	log.Println("broadcasting block to peers")
+	// broadcast mined block to peers
 	server.BroadcastTo("peers", "block", "here's the bloc")
 
 	exit <- 1
