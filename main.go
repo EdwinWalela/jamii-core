@@ -181,9 +181,14 @@ func main() {
 				return
 			}
 
-			// Accept new block from peer, check and add to local chain
+			// Accept new block broadcast from peer, check and add to local chain
 			c.On(PEER_BLOCK_BROADCAST, func(h *gosocketio.Channel, args string) {
 				log.Println("c.onblock called", args)
+			})
+
+			// Accept new block from peer, check and add to local chain
+			c.On(PEER_BLOCK_BROADCAST, func(h *gosocketio.Channel, args string) {
+				log.Println("received block 1 from peer", args)
 			})
 
 		}(&peers[i])
@@ -204,6 +209,9 @@ func main() {
 
 	// broadcast mined block to peers
 	server.BroadcastTo("peers", "block", "here's the bloc")
+
+	// request block from a (random) peer
+	server.List("peers")[0].Emit("block-request", "1")
 
 	exit <- 1
 
