@@ -25,6 +25,12 @@ type Chain struct {
 	Difficulty   uint64  // node's proof of work difficulty
 }
 
+func (c *Chain) Genesis() Block {
+	blk := Block{votes: []Vote{}, prevHash: "", timestamp: uint64(time.Now().Unix()), difficulty: c.Difficulty}
+
+	return blk
+}
+
 func (c *Chain) SetDifficulty(diff uint64) {
 	c.Difficulty = diff
 }
@@ -34,11 +40,14 @@ func (c *Chain) AddTX(tx Vote) {
 }
 
 func (c *Chain) LatestBlock() Block {
-	return c.Chain[len(c.Chain)-1]
+	if len(c.Chain) != 0 {
+		return c.Chain[len(c.Chain)-1]
+	}
+	return c.Genesis()
 }
 
 func (c *Chain) Mine(kp *jcrypto.KeyPair) {
-	blk := &Block{}
+	blk := &Block{nonce: 0, difficulty: c.Difficulty}
 	now := uint64(time.Now().Unix())
 	candidates := []eddsa.PublicKey{}
 

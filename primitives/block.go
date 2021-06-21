@@ -1,6 +1,7 @@
 package primitives
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/edwinwalela/jamii-core/jcrypto"
@@ -42,13 +43,16 @@ func (b *Block) SetDifficulty(diff uint64) {
 	b.difficulty = diff
 }
 
+func (b *Block) GetNonce() uint64 {
+	return b.nonce
+}
+
 func (b *Block) SetHash(hash string) {
 	b.hash = hash
 }
 
 func (b *Block) Hash() {
 	hash := ""
-
 	// Retrieve hashes of all votes
 	for _, v := range b.votes {
 		hash += v.GetHash()
@@ -56,17 +60,25 @@ func (b *Block) Hash() {
 
 	hash += strconv.FormatInt(int64(b.timestamp), 10)
 	hash += strconv.FormatUint(b.difficulty, 10)
-
 	b.hash = jcrypto.SHA512(hash)
+	for !b.HashValid() {
+		b.nonce++
+		b.hash = jcrypto.SHA512(fmt.Sprintf("%s%d", b.hash, b.nonce))
+
+	}
 }
 
 func (b *Block) HashValid() bool {
 	for i, v := range b.hash {
-		if v == '0' && i < int(b.difficulty) {
+		if i == int(b.difficulty) {
+			break
+		}
+		if string(v) == "0" {
 			continue
 		} else {
 			return false
 		}
+
 	}
 	return true
 }

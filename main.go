@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
 	"log"
 
@@ -15,7 +16,7 @@ const (
 	ON_BLOCK_AT_HEIGHT     = "block-at-height"
 	PEER_BLOCK_BROADCAST   = "peer-block-broadcast"
 	KEY_FILE               = "key.jpkey"
-	MIN_DIFFICULTY         = 10
+	MIN_DIFFICULTY         = 3
 )
 
 var exit = make(chan int)
@@ -60,6 +61,12 @@ func main() {
 
 	// Submit vote
 	jchain.AddTX(vote)
+
+	jchain.Mine(kp)
+
+	blk := jchain.LatestBlock()
+
+	fmt.Println(blk.GetHash())
 	// Mine vote
 	// hash := jcrypto.SHA512("hello world") // hash data
 
