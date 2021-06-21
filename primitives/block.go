@@ -1,5 +1,11 @@
 package primitives
 
+import (
+	"strconv"
+
+	"github.com/edwinwalela/jamii-core/jcrypto"
+)
+
 type Block struct {
 	/**
 	Genesis block will contain a single Vote(tx) with the candidates field indicating registered
@@ -12,10 +18,59 @@ type Block struct {
 	will be stored in web server and prior to election their addressess sent to nodes and packed into
 	a block. The block will be queried prior to casting a vote to ensure the voter was registered
 	**/
-	Votes      []Vote // list of votes representing candidates/voters (if genesis block) and cast votes if not genesis
-	Hash       string // hash of the block (votes hashes + block hash)
-	PrevHash   string // hash of previous block in the chain
-	Timestamp  uint64 // Unix timestamp of tx in seconds
-	Nonce      uint64 // Proof of work tries
-	Difficulty uint64 // Proof of work difficulty
+	votes      []Vote // list of votes representing candidates/voters (if genesis block) and cast votes if not genesis
+	hash       string // hash of the block (votes hashes + block hash)
+	prevHash   string // hash of previous block in the chain
+	timestamp  uint64 // Unix timestamp of tx in seconds
+	nonce      uint64 // Proof of work tries
+	difficulty uint64 // Proof of work difficulty
+}
+
+func (b *Block) GetHash() string {
+	return b.hash
+}
+
+func (b *Block) GetPreviousHash() string {
+	return b.prevHash
+}
+
+func (b *Block) SetPreviousHash(hash string) {
+	b.prevHash = hash
+}
+
+func (b *Block) SetDifficulty(diff uint64) {
+	b.difficulty = diff
+}
+
+func (b *Block) SetHash(hash string) {
+	b.hash = hash
+}
+
+func (b *Block) Hash() {
+	hash := ""
+
+	// Retrieve hashes of all votes
+	for _, v := range b.votes {
+		hash += v.GetHash()
+	}
+
+	hash += strconv.FormatInt(int64(b.timestamp), 10)
+	hash += strconv.FormatUint(b.difficulty, 10)
+
+	b.hash = jcrypto.SHA512(hash)
+}
+
+func (b *Block) HashValid() bool {
+	for i, v := range b.hash {
+		if v == '0' && i < int(b.difficulty) {
+			continue
+		} else {
+			return false
+		}
+	}
+	return true
+}
+
+func (b *Block) AddVote(v Vote) {
+	b.votes = append(b.votes, v)
 }

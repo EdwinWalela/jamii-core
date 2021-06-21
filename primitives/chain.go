@@ -42,15 +42,15 @@ func (c *Chain) Mine(kp *jcrypto.KeyPair) {
 	now := uint64(time.Now().Unix())
 	candidates := []eddsa.PublicKey{}
 
-	voteBase := &Vote{Address: kp.PubKey, Candidates: candidates, Timestamp: now}
+	voteBase := &Vote{address: kp.PubKey, candidates: candidates, timestamp: now}
 
-	blk.Votes = append(blk.Votes, *voteBase)
+	blk.AddVote(*voteBase) // Add vote
 
-	for k, v := range c.PendingVotes {
-
+	for _, v := range c.PendingVotes {
+		blk.AddVote(v) // add all pending votes to new block
 	}
 
-	blk.PrevHash = c.LatestBlock().Hash // Set previous hash
+	blk.SetPreviousHash(c.LatestBlock().hash) // Set previous hash
 
 	blk.Hash() // Hash block
 

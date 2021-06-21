@@ -13,11 +13,11 @@ type Vote struct {
 	Mobile clients submits vote via TCP socket connection & node packs it into a Vote
 	**/
 
-	Address    eddsa.PublicKey   // public key of tx initiator
-	Candidates []eddsa.PublicKey // list of candidtes selected by initiator
-	Signature  []byte            // signature by the initiator's public key
-	Hash       string            // hash of the tx
-	Timestamp  uint64            // Unix timestamp of tx in seconds
+	address    eddsa.PublicKey   // public key of tx initiator
+	candidates []eddsa.PublicKey // list of candidtes selected by initiator
+	signature  []byte            // signature by the initiator's public key
+	hash       string            // hash of the tx
+	timestamp  uint64            // Unix timestamp of tx in seconds
 }
 
 /**
@@ -25,20 +25,36 @@ type Vote struct {
 	This is broken down by node
 **/
 
-func (v *Vote) hash() string {
+func (v *Vote) GetAddress() eddsa.PublicKey {
+	return v.address
+}
+
+func (v *Vote) GetSignature() []byte {
+	return v.signature
+}
+
+func (v *Vote) GetHash() string {
+	return v.hash
+}
+
+func (v *Vote) SetCandidates(candidates []eddsa.PublicKey) {
+	v.candidates = candidates
+}
+
+func (v *Vote) Hash() string {
 	_hash := ""
 
-	_hash += v.Address.String()
+	_hash += v.address.String()
 
-	for _, candidate := range v.Candidates {
+	for _, candidate := range v.candidates {
 		_hash += candidate.String()
 	}
 
-	_hash += fmt.Sprintf("%d", v.Timestamp)
+	_hash += fmt.Sprintf("%d", v.timestamp)
 
 	return jcrypto.SHA512(_hash)
 }
 
 func (v *Vote) isValid() bool {
-	return jcrypto.VerifySig(v.Signature, []byte(v.Hash), v.Address)
+	return jcrypto.VerifySig(v.signature, []byte(v.hash), v.address)
 }
