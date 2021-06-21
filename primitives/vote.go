@@ -38,3 +38,7 @@ func (v *Vote) hash() string {
 
 	return jcrypto.SHA512(_hash)
 }
+
+func (v *Vote) isValid() bool {
+	return jcrypto.VerifySig(v.Signature, []byte(v.Hash), v.Address)
+}

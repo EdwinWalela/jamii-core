@@ -1,17 +1,10 @@
 package main
 
 import (
-	"encoding/json"
-	"flag"
 	"fmt"
-	"log"
-	"net/http"
-	"strconv"
-	"strings"
+	"io/ioutil"
 
-	"github.com/edwinwalela/jamii-core/net/peer"
-	gosocketio "github.com/graarh/golang-socketio"
-	"github.com/graarh/golang-socketio/transport"
+	"github.com/edwinwalela/jamii-core/jcrypto"
 )
 
 const (
@@ -25,13 +18,28 @@ const (
 var exit = make(chan int)
 
 func main() {
+	// localPortPtr := flag.String("local", "3000", "local socket server")
+	// tunnelUrlPtr := flag.String("tunnel", "", "Local tunnel URL (Ngrok)")
+
+	// flag.Parse()
 
 	/** Key pair generation and signing **/
+	fmt.Println("Key Pair Generation")
 
-	// kp := &jcrypto.KeyPair{}
+	kp := &jcrypto.KeyPair{}
 
-	// jcrypto.GenKeyPair(kp, "") // Generate key pair
+	_, err := ioutil.ReadFile("priv.dat")
 
+	if err != nil {
+		var secret string
+		fmt.Printf("Private key not found in directory\nEnter secret for new KeyPair: ")
+		fmt.Scanln(&secret)
+		jcrypto.GenKeyPair(kp, secret)
+	} else {
+		jcrypto.ReadKeyPair(kp, "priv.dat")
+	}
+
+	fmt.Println(kp.PubKey.String())
 	// hash := jcrypto.SHA512("hello world") // hash data
 
 	// signature, err := kp.Sign(hash) // sign hash
@@ -74,11 +82,7 @@ func main() {
 	// fmt.Println("Hash:", v.Hash)
 	// fmt.Println("Timestamp: ", v.Timestamp)
 
-	server := gosocketio.NewServer(transport.GetDefaultWebsocketTransport())
-	localPortPtr := flag.String("local", "3000", "local socket server")
-	// tunnelUrlPtr := flag.String("tunnel", "", "Local tunnel URL (Ngrok)")
-
-	flag.Parse()
+	// server := gosocketio.NewServer(transport.GetDefaultWebsocketTransport())
 
 	// if *tunnelUrlPtr == "" {
 	// 	log.Fatal("Local Tunnel URL not provided")
@@ -86,114 +90,114 @@ func main() {
 
 	// Send tunnelURL to server for storage
 
-	server.On(gosocketio.OnConnection, func(c *gosocketio.Channel) {
+	// server.On(gosocketio.OnConnection, func(c *gosocketio.Channel) {
 
-		source := c.RequestHeader().Get("source")
+	// 	source := c.RequestHeader().Get("source")
 
-		switch source {
-		case "peer":
-			err := c.Join("peers")
-			log.Println(err)
-			log.Printf("%s added to peers channel\n", c.Ip())
-			log.Printf("total members: %d\n", c.Amount("peers"))
-		case "client":
-			c.Join("clients")
-			log.Printf("%s added to clients channel\n", c.Ip())
-			log.Printf("total members: %d\n", c.Amount("peers"))
-		}
-	})
+	// 	switch source {
+	// 	case "peer":
+	// 		err := c.Join("peers")
+	// 		log.Println(err)
+	// 		log.Printf("%s added to peers channel\n", c.Ip())
+	// 		log.Printf("total members: %d\n", c.Amount("peers"))
+	// 	case "client":
+	// 		c.Join("clients")
+	// 		log.Printf("%s added to clients channel\n", c.Ip())
+	// 		log.Printf("total members: %d\n", c.Amount("peers"))
+	// 	}
+	// })
 
-	server.On(gosocketio.OnDisconnection, func(c *gosocketio.Channel) {
-		log.Println("Disconnected")
-	})
+	// server.On(gosocketio.OnDisconnection, func(c *gosocketio.Channel) {
+	// 	log.Println("Disconnected")
+	// })
 
-	// Handle vote message from clients
-	server.On(ON_CLIENT_VOTE, func(c *gosocketio.Channel, msg string) string {
-		log.Println("Recieved vote")
-		voteStr := []byte(msg)
-		var voteObj map[string]string
+	// // Handle vote message from clients
+	// server.On(ON_CLIENT_VOTE, func(c *gosocketio.Channel, msg string) string {
+	// 	log.Println("Recieved vote")
+	// 	voteStr := []byte(msg)
+	// 	var voteObj map[string]string
 
-		if err := json.Unmarshal(voteStr, &voteObj); err != nil {
-			log.Println(err)
-		}
+	// 	if err := json.Unmarshal(voteStr, &voteObj); err != nil {
+	// 		log.Println(err)
+	// 	}
 
-		// Validate vote
-		log.Println("Vote accepted")
-		// fmt.Println(voteObj["source"])
+	// 	// Validate vote
+	// 	log.Println("Vote accepted")
+	// 	// fmt.Println(voteObj["source"])
 
-		return "OK"
-		// fmt.Println(v)
-	})
+	// 	return "OK"
+	// 	// fmt.Println(v)
+	// })
 
 	// Send back latest block
-	server.On(ON_CLIENT_LATEST_BLOCK, func(c *gosocketio.Channel) {
+	// server.On(ON_CLIENT_LATEST_BLOCK, func(c *gosocketio.Channel) {
 
-	})
+	// })
 
 	// Send back currrent block height
-	server.On(ON_BLOCK_HEIGHT, func(c *gosocketio.Channel) {
+	// server.On(ON_BLOCK_HEIGHT, func(c *gosocketio.Channel) {
 
-	})
+	// })
 
 	// Send back requested block
-	server.On(ON_BLOCK_AT_HEIGHT, func(c *gosocketio.Channel) {
+	// server.On(ON_BLOCK_AT_HEIGHT, func(c *gosocketio.Channel) {
 
-	})
+	// })
 
-	serveMux := http.NewServeMux()
-	serveMux.Handle("/socket.io/", server)
+	// serveMux := http.NewServeMux()
+	// serveMux.Handle("/socket.io/", server)
 
-	go func() {
-		log.Printf("Starting server on port %s...\n", *localPortPtr)
-		log.Panic(http.ListenAndServe(fmt.Sprintf(":%s", *localPortPtr), serveMux))
-	}()
+	// go func() {
+	// 	log.Printf("Starting server on port %s...\n", *localPortPtr)
+	// 	log.Panic(http.ListenAndServe(fmt.Sprintf(":%s", *localPortPtr), serveMux))
+	// }()
 
 	// Try to Connect to peers from server and store their connections
-	peers := []string{
-		"localhost:4000",
-		"a.com",
-		"b.com",
-		"c.com",
-		"d.com",
-	}
+	// peers := []string{
+	// 	"localhost:4000",
+	// 	"a.com",
+	// 	"b.com",
+	// 	"c.com",
+	// 	"d.com",
+	// }
 
-	fmt.Scanln() // Block
+	// fmt.Scanln() // Block
 
-	for i := range peers { // Attempt to connect to peers from server
+	// for i := range peers { // Attempt to connect to peers from server
 
-		go func(url *string) {
-			p := peer.PeerConnection{Host: *url}
-			var err error
-			rawUrl := strings.Split(*url, ":")
+	// 	go func(url *string) {
+	// 		p := peer.PeerConnection{Host: *url}
+	// 		var err error
+	// 		rawUrl := strings.Split(*url, ":")
 
-			if len(rawUrl) > 1 { // Extract port from URL
-				p.Port, _ = strconv.Atoi(rawUrl[1])
-				p.Host = rawUrl[0]
-			} else {
-				p.Port = 3000 // Set Default port
-			}
+	// 		if len(rawUrl) > 1 { // Extract port from URL
+	// 			p.Port, _ = strconv.Atoi(rawUrl[1])
+	// 			p.Host = rawUrl[0]
+	// 		} else {
+	// 			p.Port = 3000 // Set Default port
+	// 		}
 
-			p.Init()
-			p.SetSource("peer")
-			c, err := p.Dial() // Attempt to connect to peer
-			if err != nil {
-				log.Printf("Peer %s not found", *url)
-				return
-			}
+	// 		p.Init()
+	// 		p.SetSource("peer")
+	// 		c, err := p.Dial() // Attempt to connect to peer
+	// 		if err != nil {
+	// 			log.Printf("Peer %s not found", *url)
+	// 			return
+	// 		}
 
-			// Accept new block broadcast from peer, check and add to local chain
-			c.On(PEER_BLOCK_BROADCAST, func(h *gosocketio.Channel, args string) {
-				log.Println("c.onblock called", args)
-			})
+	// 		// Accept new block broadcast from peer, check and add to local chain
+	// 		c.On(PEER_BLOCK_BROADCAST, func(h *gosocketio.Channel, args string) {
+	// 			log.Println("c.onblock called", args)
+	// 		})
 
-			// Accept new block from peer, check and add to local chain
-			c.On(PEER_BLOCK_BROADCAST, func(h *gosocketio.Channel, args string) {
-				log.Println("received block 1 from peer", args)
-			})
+	// 		// Accept new block from peer, check and add to local chain
+	// 		c.On(PEER_BLOCK_BROADCAST, func(h *gosocketio.Channel, args string) {
+	// 			log.Println("received block 1 from peer", args)
+	// 		})
 
-		}(&peers[i])
+	// 	}(&peers[i])
 
-	}
+	// }
 
 	// Generate Key Pair
 
@@ -208,11 +212,11 @@ func main() {
 	// Initalize chain
 
 	// broadcast mined block to peers
-	server.BroadcastTo("peers", "block", "here's the bloc")
+	// server.BroadcastTo("peers", "block", "here's the bloc")
 
 	// request block from a (random) peer
-	server.List("peers")[0].Emit("block-request", "1")
+	// server.List("peers")[0].Emit("block-request", "1")
 
-	exit <- 1
+	// exit <- 1
 
 }

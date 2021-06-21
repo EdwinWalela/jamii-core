@@ -21,3 +21,8 @@ func (kp *KeyPair) Sign(src string) ([]byte, error) {
 
 	return sig, nil
 }
+
+func (kp *KeyPair) FromBytes(bytes []byte) {
+	kp.PrivKey.FromBytes(bytes)
+	kp.PubKey = *kp.PrivKey.PublicKey()
+}
