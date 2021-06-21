@@ -13,7 +13,7 @@ const (
 	ON_BLOCK_HEIGHT        = "block-height"
 	ON_BLOCK_AT_HEIGHT     = "block-at-height"
 	PEER_BLOCK_BROADCAST   = "peer-block-broadcast"
-	KEY_FILE               = "key.jkey"
+	KEY_FILE               = "key.jpkey"
 )
 
 var exit = make(chan int)
