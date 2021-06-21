@@ -1,5 +1,12 @@
 package primitives
 
+import (
+	"time"
+
+	"github.com/edwinwalela/jamii-core/jcrypto"
+	"github.com/katzenpost/core/crypto/eddsa"
+)
+
 type Chain struct {
 	/**
 		Represent the chain of blocks
@@ -24,4 +31,33 @@ func (c *Chain) SetDifficulty(diff uint64) {
 
 func (c *Chain) AddTX(tx Vote) {
 	c.PendingVotes = append(c.PendingVotes, tx)
+}
+
+func (c *Chain) LatestBlock() Block {
+	return c.Chain[len(c.Chain)-1]
+}
+
+func (c *Chain) Mine(kp *jcrypto.KeyPair) {
+	blk := &Block{}
+	now := uint64(time.Now().Unix())
+	candidates := []eddsa.PublicKey{}
+
+	voteBase := &Vote{Address: kp.PubKey, Candidates: candidates, Timestamp: now}
+
+	blk.Votes = append(blk.Votes, *voteBase)
+
+	for k, v := range c.PendingVotes {
+
+	}
+
+	blk.PrevHash = c.LatestBlock().Hash // Set previous hash
+
+	blk.Hash() // Hash block
+
+	c.Chain = append(c.Chain, *blk) // append new block
+
+	c.PendingVotes = []Vote{} // empty pending votes
+
+	// Alert peers to stop mining, broadcast new block
+
 }

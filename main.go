@@ -49,14 +49,18 @@ func main() {
 		log.Println("Key pair found")
 	}
 
+	// Initialize chain
 	jchain := &primitives.Chain{}
 
+	// Set difficulty
 	jchain.SetDifficulty(MIN_DIFFICULTY)
 
+	// Initialize vote
 	vote := primitives.Vote{}
 
+	// Submit vote
 	jchain.AddTX(vote)
-
+	// Mine vote
 	// hash := jcrypto.SHA512("hello world") // hash data
 
 	// signature, err := kp.Sign(hash) // sign hash
