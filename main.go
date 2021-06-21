@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/edwinwalela/jamii-core/jcrypto"
+	"github.com/edwinwalela/jamii-core/primitives"
 )
 
 const (
@@ -14,6 +15,7 @@ const (
 	ON_BLOCK_AT_HEIGHT     = "block-at-height"
 	PEER_BLOCK_BROADCAST   = "peer-block-broadcast"
 	KEY_FILE               = "key.jpkey"
+	MIN_DIFFICULTY         = 10
 )
 
 var exit = make(chan int)
@@ -46,6 +48,14 @@ func main() {
 		}
 		log.Println("Key pair found")
 	}
+
+	jchain := &primitives.Chain{}
+
+	jchain.SetDifficulty(MIN_DIFFICULTY)
+
+	vote := primitives.Vote{}
+
+	jchain.AddTX(vote)
 
 	// hash := jcrypto.SHA512("hello world") // hash data
 

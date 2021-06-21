@@ -17,3 +17,11 @@ type Chain struct {
 	Height       uint64  // current height of the chain
 	Difficulty   uint64  // node's proof of work difficulty
 }
+
+func (c *Chain) SetDifficulty(diff uint64) {
+	c.Difficulty = diff
+}
+
+func (c *Chain) AddTX(tx Vote) {
+	c.PendingVotes = append(c.PendingVotes, tx)
+}
