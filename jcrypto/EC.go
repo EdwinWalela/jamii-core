@@ -2,13 +2,12 @@ package jcrypto
 
 import (
 	"crypto/rand"
-	"fmt"
 	"io/ioutil"
 
 	"github.com/katzenpost/core/crypto/eddsa"
 )
 
-func GenKeyPair(kp *KeyPair, secret string) error {
+func GenKeyPair(kp *KeyPair) error {
 	var privKey *eddsa.PrivateKey
 	var err error
 	reader := rand.Reader
@@ -18,10 +17,6 @@ func GenKeyPair(kp *KeyPair, secret string) error {
 	kp.PrivKey = *privKey
 	kp.PubKey = *privKey.PublicKey()
 
-	writeErr := ioutil.WriteFile("priv.dat", kp.PrivKey.Bytes(), 0644)
-
-	fmt.Println(writeErr)
-
 	if err != nil {
 		return err
 	}
@@ -29,9 +24,13 @@ func GenKeyPair(kp *KeyPair, secret string) error {
 	return nil
 }
 
-func ReadKeyPair(kp *KeyPair, path string) {
-	dat, _ := ioutil.ReadFile("priv.dat")
+func ReadKeyPair(kp *KeyPair, path string) error {
+	dat, e := ioutil.ReadFile(path)
+	if e != nil {
+		return e
+	}
 	kp.FromBytes(dat)
+	return nil
 }
 
 func PubKeyFromBytes(key []byte, kp *KeyPair) {

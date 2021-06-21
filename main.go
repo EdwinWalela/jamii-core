@@ -1,8 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"io/ioutil"
+	"log"
 
 	"github.com/edwinwalela/jamii-core/jcrypto"
 )
@@ -13,6 +13,7 @@ const (
 	ON_BLOCK_HEIGHT        = "block-height"
 	ON_BLOCK_AT_HEIGHT     = "block-at-height"
 	PEER_BLOCK_BROADCAST   = "peer-block-broadcast"
+	KEY_FILE               = "key.jkey"
 )
 
 var exit = make(chan int)
@@ -23,23 +24,29 @@ func main() {
 
 	// flag.Parse()
 
-	/** Key pair generation and signing **/
-	fmt.Println("Key Pair Generation")
+	/** Key pair generation **/
 
 	kp := &jcrypto.KeyPair{}
 
-	_, err := ioutil.ReadFile("priv.dat")
+	_, err := ioutil.ReadFile(KEY_FILE)
 
 	if err != nil {
-		var secret string
-		fmt.Printf("Private key not found in directory\nEnter secret for new KeyPair: ")
-		fmt.Scanln(&secret)
-		jcrypto.GenKeyPair(kp, secret)
+		log.Println("Private key not found in directory, New KeyPair generated")
+
+		if err := jcrypto.GenKeyPair(kp); err != nil {
+			log.Println(err)
+		}
+
+		if err := ioutil.WriteFile(KEY_FILE, kp.PrivKey.Bytes(), 0644); err != nil {
+			log.Fatal(err)
+		}
 	} else {
-		jcrypto.ReadKeyPair(kp, "priv.dat")
+		if err := jcrypto.ReadKeyPair(kp, KEY_FILE); err != nil {
+			log.Fatal(err)
+		}
+		log.Println("Key pair found")
 	}
 
-	fmt.Println(kp.PubKey.String())
 	// hash := jcrypto.SHA512("hello world") // hash data
 
 	// signature, err := kp.Sign(hash) // sign hash
