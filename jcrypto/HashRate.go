@@ -14,6 +14,7 @@ const (
 )
 
 func FindDifficulty() (uint64, uint64) {
+	// log.Printf("Attempting PoW with difficulty of %d", Difficulty)
 	digest := SHA512(SOURCE + fmt.Sprintf("%d", nonce))
 
 	tStart := time.Now().Unix()
@@ -27,13 +28,13 @@ func FindDifficulty() (uint64, uint64) {
 
 	elapsed := tEnd - tStart
 	Difficulty++
+	// log.Printf("Operation completed in %d seconds, diff:%d", elapsed, Difficulty)
 
-	if elapsed > 1 {
+	if elapsed >= TARGET_TIME {
 		return Difficulty, nonce
 	} else {
-		FindDifficulty()
+		return FindDifficulty()
 	}
-	return Difficulty, nonce
 }
 
 func HashValid(hash string) bool {
