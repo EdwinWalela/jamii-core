@@ -13,13 +13,20 @@ const (
 	TARGET_TIME = 5             // Target HashRate in seconds
 )
 
-func FindDifficulty() (uint64, uint64) {
+func FindDifficulty() (uint64, uint64, int64) {
 	// log.Printf("Attempting PoW with difficulty of %d", Difficulty)
 	digest := SHA512(SOURCE + fmt.Sprintf("%d", nonce))
 
 	tStart := time.Now().Unix()
 
 	for !HashValid(digest) {
+		tMid := time.Now().Unix()
+
+		elapsed := tMid - tStart
+
+		if elapsed >= TARGET_TIME { // Prevent wasted work
+			return Difficulty, nonce, elapsed
+		}
 		nonce++
 		digest = SHA512(SOURCE + fmt.Sprintf("%d", nonce))
 	}
@@ -31,7 +38,7 @@ func FindDifficulty() (uint64, uint64) {
 	// log.Printf("Operation completed in %d seconds, diff:%d", elapsed, Difficulty)
 
 	if elapsed >= TARGET_TIME {
-		return Difficulty, nonce
+		return Difficulty, nonce, elapsed
 	} else {
 		return FindDifficulty()
 	}

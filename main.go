@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/edwinwalela/jamii-core/jcrypto"
 	"github.com/edwinwalela/jamii-core/primitives"
@@ -58,8 +59,9 @@ func main() {
 		log.Fatal(err)
 	}
 	log.Println("Initializing chain")
+
 	// Initialize chain
-	diff, nonce := jcrypto.FindDifficulty()
+	diff, nonce, elapsed := jcrypto.FindDifficulty()
 
 	// Ensure Chain's min Difficulty is met
 	if diff < MIN_DIFFICULTY {
@@ -72,7 +74,9 @@ func main() {
 		log.Fatal(chainInitError)
 	}
 
-	log.Printf("Chain initialized with: Diff:%d, Nonce:%d\n", diff, nonce)
+	log.Printf("Chain initialized in %d seconds with: Diff:%d, Nonce:%d\n", elapsed, diff, nonce)
+
+	time.Sleep(time.Second * 5)
 
 	// var kps []jcrypto.KeyPair
 
