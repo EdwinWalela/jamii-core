@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -72,8 +71,6 @@ func main() {
 	if chainInitError := jchain.Init(); chainInitError != nil {
 		log.Fatal(chainInitError)
 	}
-
-	ioutil.WriteFile("init.txt", []byte(fmt.Sprintf("%d", diff)), 0644)
 
 	log.Printf("Chain initialized with: Diff:%d, Nonce:%d\n", diff, nonce)
 
