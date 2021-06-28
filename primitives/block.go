@@ -19,58 +19,34 @@ type Block struct {
 	will be stored in web server and prior to election their addressess sent to nodes and packed into
 	a block. The block will be queried prior to casting a vote to ensure the voter was registered
 	**/
-	votes      []Vote // list of votes representing candidates/voters (if genesis block) and cast votes if not genesis
-	hash       string // hash of the block (votes hashes + block hash)
-	prevHash   string // hash of previous block in the chain
-	timestamp  uint64 // Unix timestamp of tx in seconds
-	nonce      uint64 // Proof of work tries
-	difficulty uint64 // Proof of work difficulty
+	Votes      []Vote // list of votes representing candidates/voters (if genesis block) and cast votes if not genesis
+	Hash       string // hash of the block (votes hashes + block hash)
+	PrevHash   string // hash of previous block in the chain
+	Timestamp  uint64 // Unix timestamp of tx in seconds
+	Nonce      uint64 // Proof of work tries
+	Difficulty uint64 // Proof of work difficulty
 }
 
-func (b *Block) GetHash() string {
-	return b.hash
-}
-
-func (b *Block) GetPreviousHash() string {
-	return b.prevHash
-}
-
-func (b *Block) SetPreviousHash(hash string) {
-	b.prevHash = hash
-}
-
-func (b *Block) SetDifficulty(diff uint64) {
-	b.difficulty = diff
-}
-
-func (b *Block) GetNonce() uint64 {
-	return b.nonce
-}
-
-func (b *Block) SetHash(hash string) {
-	b.hash = hash
-}
-
-func (b *Block) Hash() {
+func (b *Block) HashBlk() {
 	hash := ""
 	// Retrieve hashes of all votes
-	for _, v := range b.votes {
+	for _, v := range b.Votes {
 		hash += v.GetHash()
 	}
 
-	hash += strconv.FormatInt(int64(b.timestamp), 10)
-	hash += strconv.FormatUint(b.difficulty, 10)
-	b.hash = jcrypto.SHA512(hash)
+	hash += strconv.FormatInt(int64(b.Timestamp), 10)
+	hash += strconv.FormatUint(b.Difficulty, 10)
+	b.Hash = jcrypto.SHA512(hash)
 	for !b.HashValid() {
-		b.nonce++
-		b.hash = jcrypto.SHA512(fmt.Sprintf("%s%d", b.hash, b.nonce))
+		b.Nonce++
+		b.Hash = jcrypto.SHA512(fmt.Sprintf("%s%d", b.Hash, b.Nonce))
 
 	}
 }
 
 func (b *Block) HashValid() bool {
-	for i, v := range b.hash {
-		if i == int(b.difficulty) {
+	for i, v := range b.Hash {
+		if i == int(b.Difficulty) {
 			break
 		}
 		if string(v) == "0" {
@@ -84,5 +60,5 @@ func (b *Block) HashValid() bool {
 }
 
 func (b *Block) AddVote(v Vote) {
-	b.votes = append(b.votes, v)
+	b.Votes = append(b.Votes, v)
 }

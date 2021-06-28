@@ -1,6 +1,9 @@
 package primitives
 
 import (
+	"bytes"
+	"encoding/gob"
+	"log"
 	"time"
 
 	"github.com/edwinwalela/jamii-core/jcrypto"
@@ -47,7 +50,9 @@ func (c *Chain) Init() error {
 	}
 
 	c.AddTX(tx)
-	c.Mine(&kp)
+	if mineError := c.Mine(&kp); mineError != nil {
+		return mineError
+	}
 	return nil
 
 }
@@ -63,7 +68,7 @@ func (c *Chain) LatestBlock() Block {
 	return c.Genesis()
 }
 
-func (c *Chain) Mine(kp *jcrypto.KeyPair) {
+func (c *Chain) Mine(kp *jcrypto.KeyPair) error {
 	blk := &Block{nonce: 0, difficulty: c.Difficulty}
 	now := uint64(time.Now().Unix())
 	candidates := []eddsa.PublicKey{}
@@ -82,8 +87,39 @@ func (c *Chain) Mine(kp *jcrypto.KeyPair) {
 
 	c.Chain = append(c.Chain, *blk) // append new block
 
+	if err := c.writeBlock(blk); err != nil {
+		return err
+	} // Write to file system
+
 	c.PendingVotes = []Vote{} // empty pending votes
 
 	// Alert peers to stop mining, broadcast new block
 
+	return nil
+}
+
+func (c *Chain) writeBlock(blk *Block) error {
+
+	// blockFileName := fmt.Sprintf("%d", blk.GetTimestamp()) + ".jblock"
+
+	// path := filepath.Join(".", c.BlockDir, blockFileName)
+
+	// writer, err := os.Create(path)
+
+	// if err != nil {
+	// 	return err
+	// }
+
+	buf := new(bytes.Buffer)
+	enc := gob.NewEncoder(buf)
+
+	votes := blk.GetVotes()
+
+	if err := enc.Encode(); err != nil {
+		return err
+	}
+
+	log.Println(buf.Bytes())
+
+	return nil
 }
