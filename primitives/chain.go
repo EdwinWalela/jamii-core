@@ -3,7 +3,9 @@ package primitives
 import (
 	"bytes"
 	"encoding/gob"
-	"log"
+	"fmt"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/edwinwalela/jamii-core/jcrypto"
@@ -101,24 +103,45 @@ func (c *Chain) Mine(kp *jcrypto.KeyPair) error {
 
 func (c *Chain) writeBlock(blk *Block) error {
 
-	// blockFileName := fmt.Sprintf("%d", blk.GetTimestamp()) + ".jblock"
+	var blockdump string
 
-	// path := filepath.Join(".", c.BlockDir, blockFileName)
+	blockdump = fmt.Sprintf("%d,%s,%s,%d,%d|", blk.Difficulty, blk.Hash, blk.PrevHash, blk.Timestamp, blk.Nonce)
 
-	// writer, err := os.Create(path)
-
-	// if err != nil {
-	// 	return err
-	// }
+	for _, vote := range blk.Votes {
+		blockdump += fmt.Sprintf("%s,%s,%s,%d|", vote.Address.String(), vote.Hash, vote.Signature, vote.Timestamp)
+		for _, candidate := range vote.Candidates {
+			blockdump += fmt.Sprintf("%s,", candidate.String())
+		}
+	}
 
 	buf := new(bytes.Buffer)
 	enc := gob.NewEncoder(buf)
 
-	if err := enc.Encode(blk); err != nil {
+	if err := enc.Encode(blockdump); err != nil {
 		return err
 	}
 
-	log.Println(buf.Bytes())
+	blockFileName := fmt.Sprintf("%d", blk.Timestamp) + ".jblock"
+
+	path := filepath.Join(".", c.BlockDir, blockFileName)
+
+	writer, err := os.Create(path)
+
+	if err != nil {
+		return err
+	}
+
+	if _, writerError := writer.Write(buf.Bytes()); writerError != nil {
+		return writerError
+	}
+
+	// Decode
+	// dec := gob.NewDecoder(buf)
+	// var s2 string
+
+	// if err := dec.Decode(&s2); err != nil {
+	// 	return err
+	// }
 
 	return nil
 }
