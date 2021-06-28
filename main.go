@@ -59,11 +59,34 @@ func main() {
 	}
 
 	// Initialize chain
-	jchain := &primitives.Chain{Difficulty: MIN_DIFFICULTY, BlockDir: BLOCK_DIR}
+	diff, nonce := jcrypto.FindDifficulty()
+
+	// Ensure Chain's min Difficulty is met
+	if diff < MIN_DIFFICULTY {
+		diff = MIN_DIFFICULTY
+	}
+
+	jchain := &primitives.Chain{Difficulty: diff, BlockDir: BLOCK_DIR}
 
 	if chainInitError := jchain.Init(); chainInitError != nil {
 		log.Fatal(chainInitError)
 	}
+
+	log.Printf("Chain initialized with: Diff:%d, Nonce:%d\n", diff, nonce)
+
+	// var kps []jcrypto.KeyPair
+
+	// for i := 0; i < 5; i++ {
+	// 	var kp jcrypto.KeyPair
+	// 	jcrypto.GenKeyPair(&kp)
+
+	// 	vote := &primitives.Vote{
+	// 		Address:    kp.PubKey,
+	// 		Candidates: []eddsa.PublicKey{},
+	// 		Signature:  []byte(""), // client-side
+	// 	}
+	// }
+
 	// Mine vote
 	// hash := jcrypto.SHA512("hello world") // hash data
 
