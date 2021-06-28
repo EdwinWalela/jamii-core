@@ -31,7 +31,7 @@ func (b *Block) HashBlk() {
 	hash := ""
 	// Retrieve hashes of all votes
 	for _, v := range b.Votes {
-		hash += v.GetHash()
+		hash += v.Hash
 	}
 
 	hash += strconv.FormatInt(int64(b.Timestamp), 10)

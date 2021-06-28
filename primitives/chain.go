@@ -30,18 +30,18 @@ type Chain struct {
 }
 
 func (c *Chain) Genesis() Block {
-	blk := Block{votes: []Vote{}, prevHash: "", timestamp: uint64(time.Now().Unix()), difficulty: c.Difficulty}
+	blk := Block{Votes: []Vote{}, PrevHash: "", Timestamp: uint64(time.Now().Unix()), Difficulty: c.Difficulty}
 
 	return blk
 }
 
 func (c *Chain) Init() error {
 	tx := Vote{
-		address:    eddsa.PublicKey{},
-		candidates: []eddsa.PublicKey{},
-		signature:  []byte(""),
-		hash:       "",
-		timestamp:  0,
+		Address:    eddsa.PublicKey{},
+		Candidates: []eddsa.PublicKey{},
+		Signature:  []byte(""),
+		Hash:       "",
+		Timestamp:  0,
 	}
 
 	kp := jcrypto.KeyPair{}
@@ -50,6 +50,7 @@ func (c *Chain) Init() error {
 	}
 
 	c.AddTX(tx)
+
 	if mineError := c.Mine(&kp); mineError != nil {
 		return mineError
 	}
@@ -69,11 +70,11 @@ func (c *Chain) LatestBlock() Block {
 }
 
 func (c *Chain) Mine(kp *jcrypto.KeyPair) error {
-	blk := &Block{nonce: 0, difficulty: c.Difficulty}
+	blk := &Block{Nonce: 0, Difficulty: c.Difficulty}
 	now := uint64(time.Now().Unix())
 	candidates := []eddsa.PublicKey{}
 
-	voteBase := &Vote{address: kp.PubKey, candidates: candidates, timestamp: now}
+	voteBase := &Vote{Address: kp.PubKey, Candidates: candidates, Timestamp: now}
 
 	blk.AddVote(*voteBase) // Add vote
 
@@ -81,9 +82,9 @@ func (c *Chain) Mine(kp *jcrypto.KeyPair) error {
 		blk.AddVote(v) // add all pending votes to new block
 	}
 
-	blk.SetPreviousHash(c.LatestBlock().hash) // Set previous hash
+	blk.PrevHash = (c.LatestBlock().Hash) // Set previous hash
 
-	blk.Hash() // Hash block
+	blk.HashBlk() // Hash block
 
 	c.Chain = append(c.Chain, *blk) // append new block
 
@@ -113,9 +114,7 @@ func (c *Chain) writeBlock(blk *Block) error {
 	buf := new(bytes.Buffer)
 	enc := gob.NewEncoder(buf)
 
-	votes := blk.GetVotes()
-
-	if err := enc.Encode(); err != nil {
+	if err := enc.Encode(blk); err != nil {
 		return err
 	}
 
