@@ -3,6 +3,8 @@ package main
 import (
 	"io/ioutil"
 	"log"
+	"os"
+	"path/filepath"
 
 	"github.com/edwinwalela/jamii-core/jcrypto"
 	"github.com/edwinwalela/jamii-core/primitives"
@@ -16,6 +18,7 @@ const (
 	PEER_BLOCK_BROADCAST   = "peer-block-broadcast"
 	KEY_FILE               = "key.jpkey"
 	MIN_DIFFICULTY         = 3
+	BLOCK_DIR              = "/data/blocks"
 )
 
 var exit = make(chan int)
@@ -49,8 +52,14 @@ func main() {
 		log.Println("Key pair found")
 	}
 
+	// Create blocks directory
+	path := filepath.Join(".", BLOCK_DIR)
+	if err := os.MkdirAll(path, 0755); err != nil {
+		log.Fatal(err)
+	}
+
 	// Initialize chain
-	jchain := &primitives.Chain{Difficulty: MIN_DIFFICULTY}
+	jchain := &primitives.Chain{Difficulty: MIN_DIFFICULTY, BlockDir: BLOCK_DIR}
 
 	if chainInitError := jchain.Init(); chainInitError != nil {
 		log.Fatal(chainInitError)

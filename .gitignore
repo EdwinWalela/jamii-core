@@ -1,3 +1,4 @@
 *.exe
 .env
 *.jpkey
+data/

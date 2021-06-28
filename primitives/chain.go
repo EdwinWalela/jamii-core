@@ -23,6 +23,7 @@ type Chain struct {
 	PendingVotes []Vote  // list of unverified votes recieved from clients via TCP socket
 	Height       uint64  // current height of the chain
 	Difficulty   uint64  // node's proof of work difficulty
+	BlockDir     string
 }
 
 func (c *Chain) Genesis() Block {
