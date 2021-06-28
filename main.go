@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io/ioutil"
 	"log"
 
@@ -51,22 +50,11 @@ func main() {
 	}
 
 	// Initialize chain
-	jchain := &primitives.Chain{}
+	jchain := &primitives.Chain{Difficulty: MIN_DIFFICULTY}
 
-	// Set difficulty
-	jchain.SetDifficulty(MIN_DIFFICULTY)
-
-	// Initialize vote
-	vote := primitives.Vote{}
-
-	// Submit vote
-	jchain.AddTX(vote)
-
-	jchain.Mine(kp)
-
-	blk := jchain.LatestBlock()
-
-	fmt.Println(blk.GetHash())
+	if chainInitError := jchain.Init(); chainInitError != nil {
+		log.Fatal(chainInitError)
+	}
 	// Mine vote
 	// hash := jcrypto.SHA512("hello world") // hash data
 

@@ -31,8 +31,24 @@ func (c *Chain) Genesis() Block {
 	return blk
 }
 
-func (c *Chain) SetDifficulty(diff uint64) {
-	c.Difficulty = diff
+func (c *Chain) Init() error {
+	tx := Vote{
+		address:    eddsa.PublicKey{},
+		candidates: []eddsa.PublicKey{},
+		signature:  []byte(""),
+		hash:       "",
+		timestamp:  0,
+	}
+
+	kp := jcrypto.KeyPair{}
+	if err := jcrypto.GenKeyPair(&kp); err != nil {
+		return err
+	}
+
+	c.AddTX(tx)
+	c.Mine(&kp)
+	return nil
+
 }
 
 func (c *Chain) AddTX(tx Vote) {
