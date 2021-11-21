@@ -10,7 +10,7 @@ var nonce uint64 = 0
 
 const (
 	SOURCE      = "Hello World" // Sample text to hash
-	TARGET_TIME = 5             // Target HashRate in seconds
+	TARGET_TIME = 3             // Target HashRate in seconds
 )
 
 func FindDifficulty() (uint64, uint64, int64) {
@@ -20,6 +20,7 @@ func FindDifficulty() (uint64, uint64, int64) {
 	tStart := time.Now().Unix()
 
 	for !HashValid(digest) {
+
 		tMid := time.Now().Unix()
 
 		elapsed := tMid - tStart

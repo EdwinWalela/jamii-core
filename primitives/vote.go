@@ -13,11 +13,11 @@ type Vote struct {
 	Mobile clients submits vote via TCP socket connection & node packs it into a Vote
 	**/
 
-	Address    eddsa.PublicKey   // public key of tx initiator
-	Candidates []eddsa.PublicKey // list of candidtes selected by initiator
-	Signature  []byte            // signature by the initiator's public key
-	Hash       string            // hash of the tx
-	Timestamp  uint64            // Unix timestamp of tx in seconds
+	Address    eddsa.PublicKey // public key of tx initiator
+	Candidates []string        // list of candidtes selected by initiator
+	Signature  []byte          // signature by the initiator's public key
+	Hash       string          // hash of the tx
+	Timestamp  uint64          // Unix timestamp of tx in seconds
 }
 
 /**
@@ -31,7 +31,7 @@ func (v *Vote) HashVote() string {
 	_hash += v.Address.String()
 
 	for _, candidate := range v.Candidates {
-		_hash += candidate.String()
+		_hash += candidate
 	}
 
 	_hash += fmt.Sprintf("%d", v.Timestamp)
@@ -39,6 +39,6 @@ func (v *Vote) HashVote() string {
 	return jcrypto.SHA512(_hash)
 }
 
-func (v *Vote) isValid() bool {
+func (v *Vote) IsValid() bool {
 	return jcrypto.VerifySig(v.Signature, []byte(v.Hash), v.Address)
 }

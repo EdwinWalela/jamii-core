@@ -40,7 +40,7 @@ func (c *Chain) Genesis() Block {
 func (c *Chain) Init() error {
 	tx := Vote{
 		Address:    eddsa.PublicKey{},
-		Candidates: []eddsa.PublicKey{},
+		Candidates: []string{},
 		Signature:  []byte(""),
 		Hash:       "",
 		Timestamp:  0,
@@ -74,7 +74,7 @@ func (c *Chain) LatestBlock() Block {
 func (c *Chain) Mine(kp *jcrypto.KeyPair) error {
 	blk := &Block{Nonce: 0, Difficulty: c.Difficulty}
 	now := uint64(time.Now().Unix())
-	candidates := []eddsa.PublicKey{}
+	candidates := []string{}
 
 	voteBase := &Vote{Address: kp.PubKey, Candidates: candidates, Timestamp: now}
 
@@ -110,7 +110,7 @@ func (c *Chain) writeBlock(blk *Block) error {
 	for _, vote := range blk.Votes {
 		blockdump += fmt.Sprintf("%s,%s,%s,%d|", vote.Address.String(), vote.Hash, vote.Signature, vote.Timestamp)
 		for _, candidate := range vote.Candidates {
-			blockdump += fmt.Sprintf("%s,", candidate.String())
+			blockdump += fmt.Sprintf("%s,", candidate)
 		}
 	}
 
