@@ -1,10 +1,10 @@
 package primitives
 
 import (
+	"crypto/ed25519"
 	"fmt"
 
 	"github.com/edwinwalela/jamii-core/jcrypto"
-	"github.com/katzenpost/core/crypto/eddsa"
 )
 
 type Vote struct {
@@ -13,11 +13,11 @@ type Vote struct {
 	Mobile clients submits vote via TCP socket connection & node packs it into a Vote
 	**/
 
-	Address    eddsa.PublicKey // public key of tx initiator
-	Candidates []string        // list of candidtes selected by initiator
-	Signature  []byte          // signature by the initiator's public key
-	Hash       string          // hash of the tx
-	Timestamp  uint64          // Unix timestamp of tx in seconds
+	Address    ed25519.PublicKey // public key of tx initiator
+	Candidates []string          // list of candidtes selected by initiator
+	Signature  []byte            // signature by the initiator's public key
+	Hash       string            // hash of the tx
+	Timestamp  uint64            // Unix timestamp of tx in seconds
 }
 
 /**
@@ -28,7 +28,7 @@ type Vote struct {
 func (v *Vote) HashVote() string {
 	_hash := ""
 
-	_hash += v.Address.String()
+	_hash += string(v.Address)
 
 	for _, candidate := range v.Candidates {
 		_hash += candidate
@@ -40,5 +40,6 @@ func (v *Vote) HashVote() string {
 }
 
 func (v *Vote) IsValid() bool {
+
 	return jcrypto.VerifySig(v.Signature, []byte(v.Hash), v.Address)
 }

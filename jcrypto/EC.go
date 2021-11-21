@@ -1,21 +1,19 @@
 package jcrypto
 
 import (
+	"crypto/ed25519"
 	"crypto/rand"
 	"io/ioutil"
-
-	"github.com/katzenpost/core/crypto/eddsa"
 )
 
 func GenKeyPair(kp *KeyPair) error {
-	var privKey *eddsa.PrivateKey
-	var err error
+
 	reader := rand.Reader
 
-	privKey, err = eddsa.NewKeypair(reader)
+	pubKey, privKey, err := ed25519.GenerateKey(reader)
 
-	kp.PrivKey = *privKey
-	kp.PubKey = *privKey.PublicKey()
+	kp.PrivKey = privKey
+	kp.PubKey = pubKey
 
 	if err != nil {
 		return err
@@ -34,9 +32,11 @@ func ReadKeyPair(kp *KeyPair, path string) error {
 }
 
 func PubKeyFromBytes(key []byte, kp *KeyPair) {
-	kp.PubKey.FromBytes(key)
+	// kp.PubKey.FromBytes(key)
+	// ed25519.PublicKey
 }
 
-func VerifySig(sig, msg []byte, address eddsa.PublicKey) bool {
-	return address.Verify(sig, msg)
+func VerifySig(sig, msg []byte, address ed25519.PublicKey) bool {
+	return ed25519.Verify(address, msg, sig)
+
 }

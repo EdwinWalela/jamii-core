@@ -51,7 +51,7 @@ func main() {
 			log.Println(err)
 		}
 
-		if err := ioutil.WriteFile(KEY_FILE, kp.PrivKey.Bytes(), 0644); err != nil {
+		if err := ioutil.WriteFile(KEY_FILE, kp.PrivKey, 0644); err != nil {
 			log.Fatal(err)
 		}
 	} else {
@@ -140,16 +140,11 @@ func main() {
 				v.Signature = decodedSig
 			case 2: // Extract publickey (base64 encoded)
 				decodedPub, pubErr := base64.StdEncoding.DecodeString(val)
-
 				if pubErr != nil {
 					log.Println(pubErr)
 				}
 
-				kp := &jcrypto.KeyPair{}
-
-				jcrypto.PubKeyFromBytes(decodedPub, kp)
-
-				v.Address = kp.PubKey
+				v.Address = decodedPub
 			case 3: // Extract candidate names
 				for _, candidate := range strings.Split(val, ".") {
 

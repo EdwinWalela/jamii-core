@@ -2,6 +2,7 @@ package primitives
 
 import (
 	"bytes"
+	"crypto/ed25519"
 	"encoding/gob"
 	"fmt"
 	"os"
@@ -9,7 +10,6 @@ import (
 	"time"
 
 	"github.com/edwinwalela/jamii-core/jcrypto"
-	"github.com/katzenpost/core/crypto/eddsa"
 )
 
 type Chain struct {
@@ -39,7 +39,7 @@ func (c *Chain) Genesis() Block {
 
 func (c *Chain) Init() error {
 	tx := Vote{
-		Address:    eddsa.PublicKey{},
+		Address:    ed25519.PublicKey{},
 		Candidates: []string{},
 		Signature:  []byte(""),
 		Hash:       "",
@@ -108,7 +108,7 @@ func (c *Chain) writeBlock(blk *Block) error {
 	blockdump = fmt.Sprintf("%d,%s,%s,%d,%d|", blk.Difficulty, blk.Hash, blk.PrevHash, blk.Timestamp, blk.Nonce)
 
 	for _, vote := range blk.Votes {
-		blockdump += fmt.Sprintf("%s,%s,%s,%d|", vote.Address.String(), vote.Hash, vote.Signature, vote.Timestamp)
+		blockdump += fmt.Sprintf("%s,%s,%s,%d|", string(vote.Address), vote.Hash, vote.Signature, vote.Timestamp)
 		for _, candidate := range vote.Candidates {
 			blockdump += fmt.Sprintf("%s,", candidate)
 		}
