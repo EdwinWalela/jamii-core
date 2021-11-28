@@ -125,7 +125,6 @@ func main() {
 		// Validate vote
 		data := voteObj["data"]
 		v := &primitives.Vote{}
-		log.Println(data)
 		for i, val := range strings.Split(data, "|") {
 			switch i {
 			case 0: // Extract hash
