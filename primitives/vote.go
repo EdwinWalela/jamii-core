@@ -43,3 +43,7 @@ func (v *Vote) IsValid() bool {
 
 	return jcrypto.VerifySig(v.Signature, []byte(v.Hash), v.Address)
 }
+
+// func (v *Vote) RegisterIsValid() int {
+
+// }

@@ -21,6 +21,9 @@ import (
 
 const (
 	ON_CLIENT_VOTE         = "vote"
+	ON_CLIENT_REGISTER     = "register"
+	VOTE_ACK               = "VOTE_ACK"
+	VOTE_INVALID           = "VOTE_INV"
 	ON_CLIENT_LATEST_BLOCK = "latest-block"
 	ON_BLOCK_HEIGHT        = "block-height"
 	ON_BLOCK_AT_HEIGHT     = "block-at-height"
@@ -86,12 +89,6 @@ func main() {
 
 	server := gosocketio.NewServer(transport.GetDefaultWebsocketTransport())
 
-	// if *tunnelUrlPtr == "" {
-	// 	log.Fatal("Local Tunnel URL not provided")
-	// }
-
-	// Send tunnelURL to server for storage
-
 	server.On(gosocketio.OnConnection, func(c *gosocketio.Channel) {
 
 		source := c.RequestHeader().Get("source")
@@ -113,9 +110,52 @@ func main() {
 		log.Println("Disconnected")
 	})
 
+	// Handle registration meggage from clients
+	server.On(ON_CLIENT_REGISTER, func(c *gosocketio.Channel, msg string) string {
+		regsterStr := []byte(msg)
+
+		var registerObj map[string]string
+
+		if err := json.Unmarshal(regsterStr, &registerObj); err != nil {
+			log.Println(err)
+		}
+
+		// Validate vote
+		data := registerObj["data"]
+		v := &primitives.Vote{}
+
+		for i, val := range strings.Split(data, "|") {
+			switch i {
+			case 0: // Extract hash
+				v.Hash = val
+			case 1: // extract pubkey
+				decodedSig, sigErr := base64.StdEncoding.DecodeString(val)
+
+				if sigErr != nil {
+					log.Println(sigErr)
+				}
+
+				v.Address = decodedSig
+			case 2: // Extract signature (base64 encoded)
+				decodedPub, pubErr := base64.StdEncoding.DecodeString(val)
+				if pubErr != nil {
+					log.Println(pubErr)
+				}
+
+				v.Signature = decodedPub
+
+			default:
+			}
+
+		}
+		jchain.AddTX(*v)
+		return "OK"
+	})
+
 	// // Handle vote message from clients
 	server.On(ON_CLIENT_VOTE, func(c *gosocketio.Channel, msg string) string {
 		voteStr := []byte(msg)
+
 		var voteObj map[string]string
 
 		if err := json.Unmarshal(voteStr, &voteObj); err != nil {
@@ -157,8 +197,15 @@ func main() {
 			default:
 			}
 		}
-		log.Println(v.IsValid())
+		if v.IsValid() {
+
+			c.Emit(VOTE_ACK, "1")
+		} else {
+			c.Emit(VOTE_INVALID, "0")
+		}
+
 		return "OK"
+
 	})
 
 	// Send back latest block
