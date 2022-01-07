@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/edwinwalela/jamii-core/jcrypto"
 	"github.com/edwinwalela/jamii-core/primitives"
@@ -30,6 +31,7 @@ const (
 	PEER_BLOCK_BROADCAST   = "peer-block-broadcast"
 	KEY_FILE               = "key.jpkey"
 	MIN_DIFFICULTY         = 3
+	MAX_BLOCK_SIZE         = 1
 	BLOCK_DIR              = "/data/blocks"
 )
 
@@ -41,6 +43,10 @@ func main() {
 
 	flag.Parse()
 
+	log.Println("------------------------------------------")
+	log.Println("Key pair initialization")
+	log.Println("------------------------------------------")
+	log.Println("Looking for key pair")
 	/** Key pair generation **/
 
 	kp := &jcrypto.KeyPair{}
@@ -48,6 +54,7 @@ func main() {
 	_, err := ioutil.ReadFile(KEY_FILE)
 
 	if err != nil {
+
 		log.Println("Private key not found in directory, New KeyPair generated")
 
 		if err := jcrypto.GenKeyPair(kp); err != nil {
@@ -61,6 +68,7 @@ func main() {
 		if err := jcrypto.ReadKeyPair(kp, KEY_FILE); err != nil {
 			log.Fatal(err)
 		}
+
 		log.Println("Key pair found")
 	}
 
@@ -69,8 +77,9 @@ func main() {
 	if err := os.MkdirAll(path, 0755); err != nil {
 		log.Fatal(err)
 	}
+	log.Println("------------------------------------------")
 	log.Println("Initializing chain")
-
+	log.Println("------------------------------------------")
 	// Initialize chain
 	diff, nonce, elapsed := jcrypto.FindDifficulty()
 
@@ -86,32 +95,34 @@ func main() {
 	}
 
 	log.Printf("Chain initialized in %d seconds with: Diff:%d, Nonce:%d\n", elapsed, diff, nonce)
+	log.Println("------------------------------------------")
 
 	server := gosocketio.NewServer(transport.GetDefaultWebsocketTransport())
 
 	server.On(gosocketio.OnConnection, func(c *gosocketio.Channel) {
-
-		source := c.RequestHeader().Get("source")
-
-		switch source {
-		case "peer":
-			err := c.Join("peers")
-			log.Println(err)
-			log.Printf("%s added to peers channel\n", c.Ip())
-			log.Printf("total members: %d\n", c.Amount("peers"))
-		case "client":
-			c.Join("clients")
-			log.Printf("%s added to clients channel\n", c.Ip())
-			log.Printf("total members: %d\n", c.Amount("peers"))
-		}
+		log.Printf("Connection recieved from %s", c.Ip())
+		// source := c.RequestHeader().Get("source")
+		// switch source {
+		// case "peer":
+		// 	err := c.Join("peers")
+		// 	log.Println(err)
+		// 	log.Printf("%s added to peers channel\n", c.Ip())
+		// 	log.Printf("total members: %d\n", c.Amount("peers"))
+		// case "client":
+		// 	c.Join("clients")
+		// 	log.Printf("%s added to clients channel\n", c.Ip())
+		// 	log.Printf("total members: %d\n", c.Amount("peers"))
+		// }
 	})
 
 	server.On(gosocketio.OnDisconnection, func(c *gosocketio.Channel) {
-		log.Println("Disconnected")
+		log.Printf("Lost connection to %s", c.Ip())
+
 	})
 
 	// Handle registration meggage from clients
 	server.On(ON_CLIENT_REGISTER, func(c *gosocketio.Channel, msg string) string {
+		log.Printf("Received registration packet from %s\n", c.Ip())
 		regsterStr := []byte(msg)
 
 		var registerObj map[string]string
@@ -119,12 +130,13 @@ func main() {
 		if err := json.Unmarshal(regsterStr, &registerObj); err != nil {
 			log.Println(err)
 		}
-
+		c.Join("clients")
 		// Validate vote
 		data := registerObj["data"]
 		v := &primitives.Vote{}
 
 		for i, val := range strings.Split(data, "|") {
+			v.Timestamp = uint64(time.Now().Unix())
 			switch i {
 			case 0: // Extract hash
 				v.Hash = val
@@ -149,11 +161,18 @@ func main() {
 
 		}
 		jchain.AddTX(*v)
+		if len(jchain.PendingVotes) >= MAX_BLOCK_SIZE {
+
+			if err := jchain.Mine(kp); err != nil {
+				log.Println(err)
+			}
+		}
 		return "OK"
 	})
 
 	// // Handle vote message from clients
 	server.On(ON_CLIENT_VOTE, func(c *gosocketio.Channel, msg string) string {
+		log.Printf("Received vote packet from %s\n", c.Ip())
 		voteStr := []byte(msg)
 
 		var voteObj map[string]string
@@ -228,6 +247,7 @@ func main() {
 
 	go func() {
 		log.Printf("Starting server on port %s...\n", *localPortPtr)
+		log.Println("------------------------------------------")
 		log.Panic(http.ListenAndServe(fmt.Sprintf(":%s", *localPortPtr), serveMux))
 	}()
 

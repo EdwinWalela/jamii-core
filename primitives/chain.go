@@ -5,6 +5,7 @@ import (
 	"crypto/ed25519"
 	"encoding/gob"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"time"
@@ -72,28 +73,36 @@ func (c *Chain) LatestBlock() Block {
 }
 
 func (c *Chain) Mine(kp *jcrypto.KeyPair) error {
+	log.Println("Mining triggered")
 	blk := &Block{Nonce: 0, Difficulty: c.Difficulty}
-	now := uint64(time.Now().Unix())
+	blk.Timestamp = uint64(time.Now().Unix())
 	candidates := []string{}
 
-	voteBase := &Vote{Address: kp.PubKey, Candidates: candidates, Timestamp: now}
+	voteBase := &Vote{Address: kp.PubKey, Candidates: candidates, Timestamp: blk.Timestamp}
 
 	blk.AddVote(*voteBase) // Add vote
 
+	log.Printf("packaging %d pending vote(s) to new block \n", len(c.PendingVotes))
 	for _, v := range c.PendingVotes {
 		blk.AddVote(v) // add all pending votes to new block
 	}
 
 	blk.PrevHash = (c.LatestBlock().Hash) // Set previous hash
 
+	log.Println("Calculating block hash")
 	blk.HashBlk() // Hash block
+
+	log.Printf("Hash: %s......%s", blk.Hash[:12], blk.Hash[len(blk.Hash)-12:len(blk.Hash)-1])
+	log.Printf("Hash found after %d tries (nonce) with difficulty %d\n", blk.Nonce, blk.Difficulty)
 
 	c.Chain = append(c.Chain, *blk) // append new block
 
+	log.Println("Writing block file")
 	if err := c.writeBlock(blk); err != nil {
 		return err
 	} // Write to file system
 
+	log.Println("Emptying pending votes")
 	c.PendingVotes = []Vote{} // empty pending votes
 
 	// Alert peers to stop mining, broadcast new block
