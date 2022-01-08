@@ -40,7 +40,6 @@ func (v *Vote) HashVote() string {
 }
 
 func (v *Vote) IsValid() bool {
-
 	return jcrypto.VerifySig(v.Signature, []byte(v.Hash), v.Address)
 }
 

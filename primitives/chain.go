@@ -97,7 +97,8 @@ func (c *Chain) Mine(kp *jcrypto.KeyPair) error {
 
 	c.Chain = append(c.Chain, *blk) // append new block
 
-	log.Println("Writing block file")
+	log.Println("Writing block to file")
+	log.Printf("Current chain length %d\n", len(c.Chain))
 	if err := c.writeBlock(blk); err != nil {
 		return err
 	} // Write to file system

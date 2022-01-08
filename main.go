@@ -101,18 +101,6 @@ func main() {
 
 	server.On(gosocketio.OnConnection, func(c *gosocketio.Channel) {
 		log.Printf("Connection recieved from %s", c.Ip())
-		// source := c.RequestHeader().Get("source")
-		// switch source {
-		// case "peer":
-		// 	err := c.Join("peers")
-		// 	log.Println(err)
-		// 	log.Printf("%s added to peers channel\n", c.Ip())
-		// 	log.Printf("total members: %d\n", c.Amount("peers"))
-		// case "client":
-		// 	c.Join("clients")
-		// 	log.Printf("%s added to clients channel\n", c.Ip())
-		// 	log.Printf("total members: %d\n", c.Amount("peers"))
-		// }
 	})
 
 	server.On(gosocketio.OnDisconnection, func(c *gosocketio.Channel) {
@@ -183,6 +171,11 @@ func main() {
 
 		// Validate vote
 		data := voteObj["data"]
+		log.Println("Unpacking vote")
+		log.Println("------------------------------------------")
+		log.Println(data)
+		log.Println("------------------------------------------")
+
 		v := &primitives.Vote{}
 		for i, val := range strings.Split(data, "|") {
 			switch i {
@@ -217,14 +210,19 @@ func main() {
 			}
 		}
 		if v.IsValid() {
-
-			c.Emit(VOTE_ACK, "1")
+			log.Println("Vote valid. Added to pending tx")
+			jchain.AddTX(*v)
 		} else {
-			c.Emit(VOTE_INVALID, "0")
+			log.Println("Vote invalid. Discarded")
+
 		}
+		if len(jchain.PendingVotes) >= MAX_BLOCK_SIZE {
 
+			if err := jchain.Mine(kp); err != nil {
+				log.Println(err)
+			}
+		}
 		return "OK"
-
 	})
 
 	// Send back latest block
