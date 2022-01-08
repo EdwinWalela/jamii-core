@@ -84,7 +84,26 @@ func (c *Chain) Mine(kp *jcrypto.KeyPair) error {
 
 	log.Printf("packaging %d pending vote(s) to new block \n", len(c.PendingVotes))
 	for _, v := range c.PendingVotes {
-		blk.AddVote(v) // add all pending votes to new block
+		duplicate := false
+		for _, b := range c.Chain {
+			for _, tx := range b.Votes {
+				if tx.Address.Equal(v.Address) {
+					log.Println("Duplicate address found, discarding vote")
+					duplicate = true
+					// add pending vote to new block
+				}
+			}
+		}
+		if !duplicate {
+			blk.AddVote(v)
+		}
+	}
+	log.Printf("blk size: %d\n", len(blk.Votes))
+
+	if len(blk.Votes) < 2 {
+		log.Println("Minimum block size not met, discarding block")
+		log.Println("Mining terminated")
+		return nil
 	}
 
 	blk.PrevHash = (c.LatestBlock().Hash) // Set previous hash
@@ -98,7 +117,7 @@ func (c *Chain) Mine(kp *jcrypto.KeyPair) error {
 	c.Chain = append(c.Chain, *blk) // append new block
 
 	log.Println("Writing block to file")
-	log.Printf("Current chain length %d\n", len(c.Chain))
+	log.Printf("Current chain length: %d\n", len(c.Chain))
 	if err := c.writeBlock(blk); err != nil {
 		return err
 	} // Write to file system
