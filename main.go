@@ -23,6 +23,7 @@ import (
 const (
 	ON_CLIENT_VOTE         = "vote"
 	ON_CLIENT_REGISTER     = "register"
+	ON_CLIENT_RES_REQ      = "req"
 	VOTE_ACK               = "VOTE_ACK"
 	VOTE_INVALID           = "VOTE_INV"
 	ON_CLIENT_LATEST_BLOCK = "latest-block"
@@ -38,7 +39,7 @@ const (
 var exit = make(chan int)
 
 func main() {
-	localPortPtr := flag.String("local", "3000", "local socket server")
+	localPortPtr := flag.String("local", "4000", "local socket server")
 	// tunnelUrlPtr := flag.String("tunnel", "", "Local tunnel URL (Ngrok)")
 
 	flag.Parse()
@@ -88,6 +89,8 @@ func main() {
 		diff = MIN_DIFFICULTY
 	}
 
+	diff = 2
+
 	jchain := &primitives.Chain{Difficulty: diff, BlockDir: BLOCK_DIR}
 
 	if chainInitError := jchain.Init(); chainInitError != nil {
@@ -101,11 +104,12 @@ func main() {
 
 	server.On(gosocketio.OnConnection, func(c *gosocketio.Channel) {
 		log.Printf("Connection recieved from %s", c.Ip())
+
 	})
 
 	server.On(gosocketio.OnDisconnection, func(c *gosocketio.Channel) {
 		log.Printf("Lost connection to %s", c.Ip())
-
+		c.Close()
 	})
 
 	// Handle registration meggage from clients
@@ -154,6 +158,11 @@ func main() {
 			if err := jchain.Mine(kp); err != nil {
 				log.Println(err)
 			}
+		}
+		if jchain.LatestBlock().Votes[1].Hash == v.Hash {
+			c.Emit(VOTE_ACK, "")
+		} else {
+
 		}
 		return "OK"
 	})
@@ -225,6 +234,12 @@ func main() {
 		return "OK"
 	})
 
+	server.On(ON_CLIENT_RES_REQ, func(c *gosocketio.Channel, msg string) string {
+		log.Printf("Received result query packet from %s\n", c.Ip())
+
+		c.Emit("result", "1234")
+		return "OK"
+	})
 	// Send back latest block
 	server.On(ON_CLIENT_LATEST_BLOCK, func(c *gosocketio.Channel) {
 

@@ -84,18 +84,20 @@ func (c *Chain) Mine(kp *jcrypto.KeyPair) error {
 
 	log.Printf("packaging %d pending vote(s) to new block \n", len(c.PendingVotes))
 	for _, v := range c.PendingVotes {
-		duplicate := false
+		duplicate := 0
 		for _, b := range c.Chain {
 			for _, tx := range b.Votes {
 				if tx.Address.Equal(v.Address) {
-					log.Println("Duplicate address found, discarding vote")
-					duplicate = true
+
+					duplicate += 1
 					// add pending vote to new block
 				}
 			}
 		}
-		if !duplicate {
+		if duplicate < 2 {
 			blk.AddVote(v)
+		} else {
+			log.Println("Duplicate address found, discarding vote")
 		}
 	}
 	log.Printf("blk size: %d\n", len(blk.Votes))
