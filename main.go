@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/edwinwalela/jamii-core/jcrypto"
+	"github.com/edwinwalela/jamii-core/net/peer"
 	"github.com/edwinwalela/jamii-core/primitives"
 	gosocketio "github.com/graarh/golang-socketio"
 	"github.com/graarh/golang-socketio/transport"
@@ -26,6 +27,7 @@ const (
 	ON_CLIENT_RES_REQ      = "req"
 	VOTE_ACK               = "VOTE_ACK"
 	VOTE_INVALID           = "VOTE_INV"
+	DATA_SYNC              = "data-sync"
 	ON_CLIENT_LATEST_BLOCK = "latest-block"
 	ON_BLOCK_HEIGHT        = "block-height"
 	ON_BLOCK_AT_HEIGHT     = "block-at-height"
@@ -36,6 +38,8 @@ const (
 	BLOCK_DIR              = "/data/blocks"
 )
 
+var peerChannel *gosocketio.Client
+var jchain *primitives.Chain
 var exit = make(chan int)
 
 func main() {
@@ -91,7 +95,7 @@ func main() {
 
 	diff = 2
 
-	jchain := &primitives.Chain{Difficulty: diff, BlockDir: BLOCK_DIR}
+	jchain = &primitives.Chain{Difficulty: diff, BlockDir: BLOCK_DIR}
 
 	if chainInitError := jchain.Init(); chainInitError != nil {
 		log.Fatal(chainInitError)
@@ -104,12 +108,12 @@ func main() {
 
 	server.On(gosocketio.OnConnection, func(c *gosocketio.Channel) {
 		log.Printf("Connection recieved from %s", c.Ip())
-
 	})
 
-	server.On(gosocketio.OnDisconnection, func(c *gosocketio.Channel) {
-		log.Printf("Lost connection to %s", c.Ip())
-		c.Close()
+	server.On("data-req", func(c *gosocketio.Channel, msg string) string {
+		log.Println("Data sync initiated")
+		c.Emit(DATA_SYNC, "block1,block2,block3")
+		return "OK"
 	})
 
 	// Handle registration meggage from clients
@@ -126,7 +130,7 @@ func main() {
 		// Validate vote
 		data := registerObj["data"]
 		v := &primitives.Vote{}
-
+		server.BroadcastToAll(ON_CLIENT_REGISTER, data)
 		for i, val := range strings.Split(data, "|") {
 			v.Timestamp = uint64(time.Now().Unix())
 			switch i {
@@ -167,7 +171,7 @@ func main() {
 		return "OK"
 	})
 
-	// // Handle vote message from clients
+	// Handle vote message from clients
 	server.On(ON_CLIENT_VOTE, func(c *gosocketio.Channel, msg string) string {
 		log.Printf("Received vote packet from %s\n", c.Ip())
 		voteStr := []byte(msg)
@@ -221,6 +225,8 @@ func main() {
 		if v.IsValid() {
 			log.Println("Vote valid. Added to pending tx")
 			jchain.AddTX(*v)
+			server.BroadcastToAll(ON_CLIENT_VOTE, data)
+
 		} else {
 			log.Println("Vote invalid. Discarded")
 
@@ -234,25 +240,13 @@ func main() {
 		return "OK"
 	})
 
+	// Results request
 	server.On(ON_CLIENT_RES_REQ, func(c *gosocketio.Channel, msg string) string {
 		log.Printf("Received result query packet from %s\n", c.Ip())
-
-		c.Emit("result", "1234")
+		res := jchain.Result()
+		log.Printf("result:%s", res)
+		c.Emit("result", res)
 		return "OK"
-	})
-	// Send back latest block
-	server.On(ON_CLIENT_LATEST_BLOCK, func(c *gosocketio.Channel) {
-
-	})
-
-	// Send back currrent block height
-	server.On(ON_BLOCK_HEIGHT, func(c *gosocketio.Channel) {
-
-	})
-
-	// Send back requested block
-	server.On(ON_BLOCK_AT_HEIGHT, func(c *gosocketio.Channel) {
-
 	})
 
 	serveMux := http.NewServeMux()
@@ -265,51 +259,147 @@ func main() {
 	}()
 
 	// Try to Connect to peers from server and store their connections
-	// peers := []string{
-	// 	"localhost:4000",
-	// 	"a.com",
-	// 	"b.com",
-	// 	"c.com",
-	// 	"d.com",
-	// }
+	peers := []string{
+		"localhost:3000",
+	}
+	if *localPortPtr == "4000" {
 
-	// fmt.Scanln() // Block
+		for i := range peers { // Attempt to connect to peers from server
 
-	// for i := range peers { // Attempt to connect to peers from server
+			go func(url *string) {
+				p := peer.PeerConnection{Host: *url}
+				var err error
+				rawUrl := strings.Split(*url, ":")
 
-	// 	go func(url *string) {
-	// 		p := peer.PeerConnection{Host: *url}
-	// 		var err error
-	// 		rawUrl := strings.Split(*url, ":")
+				if len(rawUrl) > 1 { // Extract port from URL
+					p.Port, _ = strconv.Atoi(rawUrl[1])
+					p.Host = rawUrl[0]
+				} else {
+					p.Port = 3000 // Set Default port
+				}
 
-	// 		if len(rawUrl) > 1 { // Extract port from URL
-	// 			p.Port, _ = strconv.Atoi(rawUrl[1])
-	// 			p.Host = rawUrl[0]
-	// 		} else {
-	// 			p.Port = 3000 // Set Default port
-	// 		}
+				p.Init()
+				p.SetSource("peer")
+				peerChannel, err = p.Dial() // Attempt to connect to peer
+				if err != nil {
+					log.Printf("Peer %s not found", *url)
+					return
+				}
 
-	// 		p.Init()
-	// 		p.SetSource("peer")
-	// 		c, err := p.Dial() // Attempt to connect to peer
-	// 		if err != nil {
-	// 			log.Printf("Peer %s not found", *url)
-	// 			return
-	// 		}
+				peerChannel.Emit("data-req", "")
 
-	// 		// Accept new block broadcast from peer, check and add to local chain
-	// 		c.On(PEER_BLOCK_BROADCAST, func(h *gosocketio.Channel, args string) {
-	// 			log.Println("c.onblock called", args)
-	// 		})
+				// Accept new block broadcast from peer, check and add to local chain
+				peerChannel.On(ON_CLIENT_VOTE, func(h *gosocketio.Channel, data string) {
+					log.Println("recived vote packet from peer")
+					log.Println("------------------------------------------")
+					log.Println("Unpacking data")
+					log.Println("------------------------------------------")
+					log.Println(data)
+					log.Println("------------------------------------------")
 
-	// 		// Accept new block from peer, check and add to local chain
-	// 		c.On(PEER_BLOCK_BROADCAST, func(h *gosocketio.Channel, args string) {
-	// 			log.Println("received block 1 from peer", args)
-	// 		})
+					v := &primitives.Vote{}
+					for i, val := range strings.Split(data, "|") {
+						switch i {
+						case 0: // Extract hash
+							v.Hash = val
+						case 1: // extract signature
+							decodedSig, sigErr := base64.StdEncoding.DecodeString(val)
 
-	// 	}(&peers[i])
+							if sigErr != nil {
+								log.Println(sigErr)
+							}
 
-	// }
+							v.Signature = decodedSig
+						case 2: // Extract publickey (base64 encoded)
+							decodedPub, pubErr := base64.StdEncoding.DecodeString(val)
+							if pubErr != nil {
+								log.Println(pubErr)
+							}
+
+							v.Address = decodedPub
+						case 3: // Extract candidate names
+							for _, candidate := range strings.Split(val, ".") {
+
+								v.Candidates = append(v.Candidates, candidate)
+							}
+						case 4: // Extract timestamp
+							v.Timestamp, err = strconv.ParseUint(val, 10, 64)
+							if err != nil {
+								log.Println(err)
+							}
+						default:
+						}
+					}
+					if v.IsValid() {
+						log.Println("Vote valid. Added to pending tx")
+						jchain.AddTX(*v)
+
+					} else {
+						log.Println("Vote invalid. Discarded")
+
+					}
+					if len(jchain.PendingVotes) >= MAX_BLOCK_SIZE {
+
+						if err := jchain.Mine(kp); err != nil {
+							log.Println(err)
+						}
+					}
+				})
+
+				peerChannel.On(ON_CLIENT_REGISTER, func(h *gosocketio.Channel, data string) {
+					log.Println("recived registration packet from peer")
+					log.Println("------------------------------------------")
+					log.Println("Unpacking data")
+					log.Println("------------------------------------------")
+					log.Println(data)
+					log.Println("------------------------------------------")
+					v := &primitives.Vote{}
+
+					for i, val := range strings.Split(data, "|") {
+						v.Timestamp = uint64(time.Now().Unix())
+						switch i {
+						case 0: // Extract hash
+							v.Hash = val
+						case 1: // extract pubkey
+							decodedSig, sigErr := base64.StdEncoding.DecodeString(val)
+
+							if sigErr != nil {
+								log.Println(sigErr)
+							}
+
+							v.Address = decodedSig
+						case 2: // Extract signature (base64 encoded)
+							decodedPub, pubErr := base64.StdEncoding.DecodeString(val)
+							if pubErr != nil {
+								log.Println(pubErr)
+							}
+
+							v.Signature = decodedPub
+
+						default:
+						}
+
+					}
+					jchain.AddTX(*v)
+					if len(jchain.PendingVotes) >= MAX_BLOCK_SIZE {
+
+						if err := jchain.Mine(kp); err != nil {
+							log.Println(err)
+						}
+					}
+
+				})
+
+				// Accept new block from peer, check and add to local chain
+				peerChannel.On(DATA_SYNC, func(h *gosocketio.Channel, args string) {
+					log.Println("Recieved block from remote", args)
+
+				})
+
+			}(&peers[i])
+
+		}
+	}
 
 	// Generate Key Pair
 

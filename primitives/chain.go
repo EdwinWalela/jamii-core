@@ -8,6 +8,8 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/edwinwalela/jamii-core/jcrypto"
@@ -130,6 +132,72 @@ func (c *Chain) Mine(kp *jcrypto.KeyPair) error {
 	// Alert peers to stop mining, broadcast new block
 
 	return nil
+}
+
+func (c *Chain) Result() string {
+	res := ""
+	var presidential = make(map[string]int)
+	var county = make(map[string]int)
+	var parliamentary = make(map[string]int)
+
+	for _, b := range c.Chain {
+		for _, v := range b.Votes {
+			for _, c := range v.Candidates {
+
+				if strings.Contains(c, "Presidential") {
+
+					if count, exists := presidential[c]; !exists {
+						presidential[c] = 1
+					} else {
+						presidential[c] = count + 1
+					}
+				} else if strings.Contains(c, "Parliamentary") {
+					if count, exists := parliamentary[c]; !exists {
+						parliamentary[c] = 1
+					} else {
+						parliamentary[c] = count + 1
+					}
+				} else if strings.Contains(c, "County") {
+					if count, exists := county[c]; !exists {
+						county[c] = 1
+					} else {
+						county[c] = count + 1
+					}
+				}
+			}
+		}
+	}
+	highestPresCount := 0
+	topPres := ""
+	highestParlCount := 0
+	topParl := ""
+	highestCountyCount := 0
+	topCounty := ""
+
+	for k, v := range presidential {
+		if v > highestPresCount {
+			highestPresCount = v
+			topPres = k
+		}
+
+	}
+	res += topPres + "-" + strconv.Itoa(highestPresCount) + "|"
+	for k, v := range parliamentary {
+		if v > highestParlCount {
+			highestParlCount = v
+			topParl = k
+		}
+	}
+	res += topParl + "-" + strconv.Itoa(highestParlCount) + "|"
+	for k, v := range county {
+		if v > highestCountyCount {
+			highestCountyCount = v
+			topCounty = k
+		}
+	}
+	res += topCounty + "-" + strconv.Itoa(highestCountyCount) + "|"
+
+	return res
 }
 
 func (c *Chain) writeBlock(blk *Block) error {
