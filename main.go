@@ -8,7 +8,9 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -36,17 +38,50 @@ const (
 	MIN_DIFFICULTY         = 3
 	MAX_BLOCK_SIZE         = 1
 	BLOCK_DIR              = "/data/blocks"
+	PEER_NETWORK           = "https://jamii-peer.herokuapp.com/peers"
 )
 
 var peerChannel *gosocketio.Client
 var jchain *primitives.Chain
 var exit = make(chan int)
 
+// register tunnel url
+
+func registerPeer(tunnelUrl string) error {
+	log.Println("registering peer")
+	data := url.Values{
+		"url": {tunnelUrl},
+	}
+
+	_, err := http.PostForm(PEER_NETWORK, data)
+
+	return err
+}
+
+// deregister tunnel url
+
+func deregisterPeer(tunnelUrl string) error {
+	log.Println("deregistering peer")
+	data := url.Values{
+		"url": {tunnelUrl},
+	}
+
+	_, err := http.PostForm(PEER_NETWORK+"/delete", data)
+
+	return err
+}
+
 func main() {
 	localPortPtr := flag.String("local", "4000", "local socket server")
-	// tunnelUrlPtr := flag.String("tunnel", "", "Local tunnel URL (Ngrok)")
+	tunnelUrlPtr := flag.String("tunnel", "", "Local tunnel URL (Ngrok)")
 
 	flag.Parse()
+	// send tunnel url
+
+	if err := registerPeer(*tunnelUrlPtr); err != nil {
+		log.Fatal("Unable to register peer")
+	}
+	defer deregisterPeer(*tunnelUrlPtr)
 
 	log.Println("------------------------------------------")
 	log.Println("Key pair initialization")
@@ -400,25 +435,17 @@ func main() {
 
 		}
 	}
-
-	// Generate Key Pair
-
-	// Attempt to connect to peers
-
-	// Read Blocks from memory
-
-	// If no blocks request from peers
-
-	// Check chain
-
-	// Initalize chain
-
-	// broadcast mined block to peers
-	// server.BroadcastTo("peers", "block", "here's the bloc")
-
-	// request block from a (random) peer
-	// server.List("peers")[0].Emit("block-request", "1")
-
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	go func() {
+		for sig := range c {
+			// sig is a ^C, handle it
+			log.Println(sig.String())
+			deregisterPeer(*tunnelUrlPtr)
+			os.Exit(1)
+		}
+	}()
 	exit <- 1
+	// deregister tunnel url
 
 }
